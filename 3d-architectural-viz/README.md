@@ -7,7 +7,7 @@ edge, a curving gravel path, and a grove of 18 blooming cherry blossom trees —
 rendered isometrically in soft golden-hour light.
 
 Off-grid systems are modelled to scale and labelled: solar array + wall-mounted
-battery, rain cistern (fed by a roof downpipe), stone well, and septic tank
+battery, rain cistern (fed by a roof downpipe), borehole well, and septic tank
 with leach field.
 
 ## Viewing

@@ -107,11 +107,11 @@
   // Plot is 60 m (x) by 40 m (z), centred on the origin.
   // Gentle rise toward the cabin corner (+x, −z); pads flatten around built areas.
   const PLOT_X = 60, PLOT_Z = 40, HALF_X = 30, HALF_Z = 20;
-  // cabin (8 m long × 6 m wide) sits 5 m off the top and right edges,
-  // ridge aligned with the plot's long (60 m) edge
-  const CABIN_POS = new THREE.Vector2(21.0, -12.0);
+  // cabin (8 m long × 6 m wide) sits 5 m off the right (x=+30) and near (z=+20)
+  // edges, ridge aligned with the plot's long (60 m) edge
+  const CABIN_POS = new THREE.Vector2(21.0, 12.0);
   const POOL_POS = new THREE.Vector2(3.5, 1.5);
-  const PATIO_POS = new THREE.Vector2(11.0, -6.5);
+  const PATIO_POS = new THREE.Vector2(10.5, 7.0);
 
   function baseHeight(x, z) {
     const sx = smoothstep(0, 1, (x + HALF_X) / PLOT_X);
@@ -275,12 +275,11 @@
     mesh.receiveShadow = true;
     return mesh;
   }
-  const mainPath = [[-30.5, 6.5], [-22, 9.5], [-13, 9.0], [-5.5, 7.5], [1.5, 4.5], [6.5, 0.5], [10.5, -4.5], [13.8, -9], [15.6, -11.5]];
+  // drive enters from the top edge, passes the borehole, skirts the pool's
+  // north rim and arrives at the cabin's glazed gable
+  const mainPath = [[2, -20.6], [0, -15], [1.5, -8], [4.5, -3], [7.5, -0.5], [10.5, 3], [12.5, 6.5], [15.6, 12]];
   land.add(pathRibbon(mainPath, 2.0, C.path, 0.055));
   land.add(pathRibbon(mainPath, 2.5, C.pathEdge, 0.03));
-  const wellPath = [[-5.5, 7.5], [-4.5, 0], [-2.8, -8], [-1.5, -14.2]];
-  land.add(pathRibbon(wellPath, 1.3, C.path, 0.055));
-  land.add(pathRibbon(wellPath, 1.7, C.pathEdge, 0.03));
 
   // ---------- helpers ----------
   function std(color, opts) {
@@ -430,9 +429,10 @@
   roofGroup.add(mesh(new THREE.CylinderGeometry(0.12, 0.12, 1.4, 10), std(C.metal, { metalness: 0.5, roughness: 0.45 }), 1.4, 0.35 + RIDGE_H - m2y(1.4) + 0.6, -2.4));
   function m2y(x) { return roofSlope * x; }
 
-  // solar array on the sun-facing (west, local −x) roof plane
+  // solar arrays on both roof planes — south runs along the plot diagonal,
+  // so each plane gets meaningful sun through the day
   const solarGroup = new THREE.Group();
-  {
+  function solarArray(sign) {
     const g = new THREE.Group();
     const cols = 4, rows = 2, pw = 1.05, ph = 1.75, gap = 0.09;
     for (let cix = 0; cix < cols; cix++) {
@@ -448,10 +448,11 @@
         g.add(panel);
       }
     }
-    g.rotation.z = -roofPitch; // south (world +z) roof plane, facing the sun
-    g.position.set((W / 2 + OVER) / 2, 0.35 + (RIDGE_H + EAVE_Y) / 2 + 0.1, 0);
-    solarGroup.add(g);
+    g.rotation.z = -sign * roofPitch;
+    g.position.set(sign * (W / 2 + OVER) / 2, 0.35 + (RIDGE_H + EAVE_Y) / 2 + 0.1, 0);
+    return g;
   }
+  solarGroup.add(solarArray(1), solarArray(-1));
   roofGroup.add(solarGroup);
 
   // interior, visible through the glazing / x-ray
@@ -642,7 +643,7 @@
     // dining table + chairs
     const wood = std(0x8a5a33, { roughness: 0.75 });
     const tset = new THREE.Group();
-    tset.position.set(PATIO_POS.x + 0.4, PAD_H + 0.1, PATIO_POS.y - 1.8);
+    tset.position.set(PATIO_POS.x - 0.6, PAD_H + 0.1, PATIO_POS.y - 0.8);
     tset.rotation.y = cabinYaw + Math.PI / 2;
     tset.add(mesh(new THREE.BoxGeometry(2.0, 0.06, 0.95), wood, 0, 0.73, 0));
     for (const [lx, lz] of [[-0.9, -0.4], [0.9, -0.4], [-0.9, 0.4], [0.9, 0.4]]) {
@@ -666,7 +667,7 @@
     // two sun loungers facing the pool
     for (const k of [0, 1]) {
       const lg = new THREE.Group();
-      lg.position.set(PATIO_POS.x + 2.2 + k * 1.1, PAD_H + 0.1, PATIO_POS.y + 2.2 + k * 0.5);
+      lg.position.set(PATIO_POS.x - 3.0 - k * 1.2, PAD_H + 0.1, PATIO_POS.y + 2.0 + k * 0.7);
       lg.rotation.y = Math.atan2(POOL_POS.x - lg.position.x, POOL_POS.y - lg.position.z) + Math.PI;
       const teak = std(0x9a6b40, { roughness: 0.8 });
       lg.add(mesh(new THREE.BoxGeometry(0.62, 0.07, 1.35), teak, 0, 0.28, 0.25));
@@ -714,7 +715,7 @@
     // band along the left edge climbing to the top-left corner, plus the lower-left grove
     const seeds = [
       [-27, -16], [-26.5, -9], [-27, -2], [-25.5, 5], [-26, 12], [-22, 17],
-      [-15, 16.5], [-8, 17], [-1, 16.5], [7, 16], [14, 17], [21, 15.5],
+      [-15, 16.5], [-8, 17], [-1, 16.5], [7, 16], [12, 17.5], [28, 4.5],
       [-19, 12], [-13, 13.5], [-20, 4], [-16, -3], [-10, 12], [-4, 12.5]
     ];
     for (const [sx, sz] of seeds) treeSpots.push([sx + rr(-1.2, 1.2), sz + rr(-1.2, 1.2)]);
@@ -815,13 +816,13 @@
 
   // cistern: buried tank, concrete access lid behind the cabin
   {
-    const cx = 23.5, cz = -16.5, gy = groundHeight(cx, cz);
+    const cx = 23.5, cz = 17.0, gy = groundHeight(cx, cz);
     const g = new THREE.Group();
     g.add(mesh(new THREE.CylinderGeometry(1.35, 1.45, 0.28, 26), std(C.concrete, { roughness: 0.95 }), cx, gy + 0.1, cz));
     g.add(mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.1, 18), std(0x8f8a7c), cx + 0.4, gy + 0.28, cz - 0.2));
     g.add(mesh(new THREE.BoxGeometry(0.18, 0.05, 0.5), std(C.metal, { metalness: 0.5 }), cx - 0.5, gy + 0.27, cz + 0.3));
     // downpipe from the cabin roof feeding the tank
-    const gutterA = new THREE.Vector3(-W / 2 - OVER + 0.2, 0.35 + WALL_H + 0.05, -L / 2 + 0.4)
+    const gutterA = new THREE.Vector3(W / 2 + OVER - 0.2, 0.35 + WALL_H + 0.05, -L / 2 + 0.4)
       .applyAxisAngle(new THREE.Vector3(0, 1, 0), cabinYaw).add(new THREE.Vector3(CABIN_POS.x, CABIN_H, CABIN_POS.y));
     const pipePts = [gutterA, new THREE.Vector3(gutterA.x, gy + 0.35, gutterA.z), new THREE.Vector3(cx - 1.2, gy + 0.18, cz + 0.6)];
     const pipe = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pipePts), 20, 0.06, 8), std(C.metal, { metalness: 0.4, roughness: 0.5 }));
@@ -831,63 +832,42 @@
     anchors.cistern = new THREE.Vector3(cx, gy + 0.4, cz);
   }
 
-  // well: stone ring with a small timber windlass roof
+  // borehole well: steel casing stub with a cap on a small concrete pad
   {
     const wx = -1.5, wz = -15.6, gy = groundHeight(wx, wz);
     const g = new THREE.Group();
     g.position.set(wx, gy, wz);
-    const ring = mesh(new THREE.CylinderGeometry(0.85, 0.95, 0.85, 18), std(C.stoneGrey, { roughness: 1 }), 0, 0.42, 0);
-    g.add(ring);
-    // stone texture via a few proud stones
-    for (let i = 0; i < 10; i++) {
-      const a = i / 10 * Math.PI * 2;
-      const st = mesh(blobGeometry(0.16, 0, 0.3), std(i % 2 ? C.stone : C.stoneCool), Math.cos(a) * 0.88, rr(0.2, 0.62), Math.sin(a) * 0.88);
-      st.scale.set(1, 0.8, 0.6);
-      g.add(st);
-    }
-    const hole = mesh(new THREE.CylinderGeometry(0.62, 0.62, 0.06, 18), new THREE.MeshBasicMaterial({ color: 0x1e1a14 }), 0, 0.83, 0);
-    hole.castShadow = false;
-    g.add(hole);
-    for (const s of [-1, 1]) {
-      g.add(mesh(new THREE.BoxGeometry(0.12, 1.5, 0.12), std(C.timberDark), s * 0.95, 1.2, 0));
-    }
-    const axle = mesh(new THREE.CylinderGeometry(0.06, 0.06, 2.1, 8), std(C.trunk), 0, 1.55, 0);
-    axle.rotation.z = Math.PI / 2;
-    g.add(axle);
-    // little gable roof over the windlass
-    for (const s of [-1, 1]) {
-      const wr = mesh(new THREE.BoxGeometry(2.3, 0.05, 0.62), std(C.roofEdge), 0, 0, 0);
-      wr.rotation.x = s * 0.55;
-      wr.position.set(0, 1.98, s * 0.26);
-      g.add(wr);
-    }
-    const bucket = mesh(new THREE.CylinderGeometry(0.11, 0.13, 0.22, 10), std(0x7a6a4a), 0.3, 1.1, 0);
-    g.add(bucket);
-    g.add(mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.36, 5), std(C.frame), 0.3, 1.36, 0)); // rope
+    g.add(mesh(new THREE.CylinderGeometry(0.55, 0.62, 0.12, 18), std(C.concrete, { roughness: 0.95 }), 0, 0.05, 0));
+    g.add(mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.5, 12), std(0x9aa0a8, { metalness: 0.55, roughness: 0.4 }), 0, 0.35, 0));
+    g.add(mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.07, 12), std(0x4a5058, { metalness: 0.4, roughness: 0.5 }), 0, 0.62, 0));
+    // small spigot
+    const sp = mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.2, 6), std(C.metal, { metalness: 0.5 }), 0.16, 0.45, 0);
+    sp.rotation.z = Math.PI / 2;
+    g.add(sp);
     systems.add(g);
-    anchors.well = new THREE.Vector3(wx, gy + 2.4, wz);
+    anchors.well = new THREE.Vector3(wx, gy + 0.7, wz);
   }
 
-  // septic tank + leach field east of the cabin
+  // septic tank + leach field north of the cabin
   {
-    const sx1 = 26.2, sz1 = -3.2, gy1 = groundHeight(sx1, sz1);
+    const sx1 = 26.5, sz1 = 5.0, gy1 = groundHeight(sx1, sz1);
     const lid = std(C.lidGreen, { roughness: 0.9 });
     systems.add(mesh(new THREE.CylinderGeometry(0.5, 0.55, 0.12, 18), lid, sx1, gy1 + 0.05, sz1));
-    const gy2 = groundHeight(sx1 + 1.6, sz1 + 1.2);
-    systems.add(mesh(new THREE.CylinderGeometry(0.4, 0.44, 0.12, 18), lid, sx1 + 1.6, gy2 + 0.05, sz1 + 1.2));
+    const gy2 = groundHeight(sx1 + 1.4, sz1 + 1.2);
+    systems.add(mesh(new THREE.CylinderGeometry(0.4, 0.44, 0.12, 18), lid, sx1 + 1.4, gy2 + 0.05, sz1 + 1.2));
     systems.add(mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.5, 8), std(0xdad5c8), sx1 - 0.8, gy1 + 0.25, sz1 - 0.6)); // vent
     // leach field: parallel gravel runs in slightly drier grass
     for (let i = 0; i < 4; i++) {
       const lx = 24.4 + i * 1.5;
-      const run = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 8.5), std(0xb5ad7e, { roughness: 1, transparent: true, opacity: 0.65 }));
+      const run = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 7), std(0xb5ad7e, { roughness: 1, transparent: true, opacity: 0.65 }));
       run.rotation.x = -Math.PI / 2;
-      const lz = 4.6;
+      const lz = -1.5;
       run.position.set(lx, groundHeight(lx, lz) + 0.045, lz);
       run.receiveShadow = true;
       systems.add(run);
     }
-    anchors.septic = new THREE.Vector3(sx1 + 0.8, gy1 + 0.35, sz1 + 0.5);
-    anchors.leach = new THREE.Vector3(26.6, groundHeight(26.6, 4.6) + 0.15, 4.6);
+    anchors.septic = new THREE.Vector3(sx1 + 0.7, gy1 + 0.35, sz1 + 0.6);
+    anchors.leach = new THREE.Vector3(26.6, groundHeight(26.6, -1.5) + 0.15, -1.5);
   }
 
   // solar + battery anchors
@@ -939,10 +919,10 @@
     labels.add(line);
   }
   makeLabel('Solar array 3.4 kWp', anchors.solar, new THREE.Vector3(-6, 2.2, 2));
-  makeLabel('Battery 10 kWh', anchors.battery, new THREE.Vector3(3.5, 1.2, 3));
+  makeLabel('Battery 10 kWh', anchors.battery, new THREE.Vector3(5, 0.3, 6));
   makeLabel('Rain cistern 10 m³', anchors.cistern, new THREE.Vector3(-2, 1.6, -1));
-  makeLabel('Well', anchors.well, new THREE.Vector3(-3, 1.6, 1));
-  makeLabel('Septic tank', anchors.septic, new THREE.Vector3(2, 1.8, -2));
+  makeLabel('Borehole well', anchors.well, new THREE.Vector3(-3, 1.6, 1));
+  makeLabel('Septic tank', anchors.septic, new THREE.Vector3(4, 0.6, 4));
   makeLabel('Leach field', anchors.leach, new THREE.Vector3(3, 1.6, 2));
 
   // ---------- drifting petals ----------
