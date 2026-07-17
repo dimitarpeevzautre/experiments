@@ -107,9 +107,11 @@
   // Plot is 60 m (x) by 40 m (z), centred on the origin.
   // Gentle rise toward the cabin corner (+x, −z); pads flatten around built areas.
   const PLOT_X = 60, PLOT_Z = 40, HALF_X = 30, HALF_Z = 20;
-  const CABIN_POS = new THREE.Vector2(17.5, -10.5);
+  // cabin (8 m long × 6 m wide) sits 5 m off the top and right edges,
+  // ridge aligned with the plot's long (60 m) edge
+  const CABIN_POS = new THREE.Vector2(21.0, -12.0);
   const POOL_POS = new THREE.Vector2(3.5, 1.5);
-  const PATIO_POS = new THREE.Vector2(10.0, -5.0);
+  const PATIO_POS = new THREE.Vector2(11.0, -6.5);
 
   function baseHeight(x, z) {
     const sx = smoothstep(0, 1, (x + HALF_X) / PLOT_X);
@@ -273,7 +275,7 @@
     mesh.receiveShadow = true;
     return mesh;
   }
-  const mainPath = [[-30.5, 6.5], [-22, 9.5], [-13, 9.0], [-5.5, 7.5], [1.5, 4.5], [6.5, 0.5], [10.5, -3.5], [14.2, -7.2]];
+  const mainPath = [[-30.5, 6.5], [-22, 9.5], [-13, 9.0], [-5.5, 7.5], [1.5, 4.5], [6.5, 0.5], [10.5, -4.5], [13.8, -9], [15.6, -11.5]];
   land.add(pathRibbon(mainPath, 2.0, C.path, 0.055));
   land.add(pathRibbon(mainPath, 2.5, C.pathEdge, 0.03));
   const wellPath = [[-5.5, 7.5], [-4.5, 0], [-2.8, -8], [-1.5, -14.2]];
@@ -307,7 +309,7 @@
   // ---------- cabin (6 m × 8 m, to scale) ----------
   const W = 6, L = 8, WALL_H = 2.7, RIDGE_H = 4.7, OVER = 0.55;
   const cabin = new THREE.Group();
-  const cabinYaw = Math.atan2(POOL_POS.x - CABIN_POS.x, POOL_POS.y - CABIN_POS.y);
+  const cabinYaw = -Math.PI / 2; // glazed gable faces down-plot toward the pool
   cabin.position.set(CABIN_POS.x, CABIN_H, CABIN_POS.y);
   cabin.rotation.y = cabinYaw;
   scene.add(cabin);
@@ -446,8 +448,8 @@
         g.add(panel);
       }
     }
-    g.rotation.z = roofPitch;
-    g.position.set(-(W / 2 + OVER) / 2, 0.35 + (RIDGE_H + EAVE_Y) / 2 + 0.1, 0);
+    g.rotation.z = -roofPitch; // south (world +z) roof plane, facing the sun
+    g.position.set((W / 2 + OVER) / 2, 0.35 + (RIDGE_H + EAVE_Y) / 2 + 0.1, 0);
     solarGroup.add(g);
   }
   roofGroup.add(solarGroup);
@@ -890,7 +892,7 @@
 
   // solar + battery anchors
   {
-    const roofPt = new THREE.Vector3(-(W / 4), 0.35 + RIDGE_H - 0.4, 0)
+    const roofPt = new THREE.Vector3(W / 4, 0.35 + RIDGE_H - 0.4, 0)
       .applyAxisAngle(new THREE.Vector3(0, 1, 0), cabinYaw).add(new THREE.Vector3(CABIN_POS.x, CABIN_H, CABIN_POS.y));
     anchors.solar = roofPt;
     anchors.battery = batteryAnchor;
