@@ -63,10 +63,14 @@
 
   function applyCamera() {
     const aspect = canvas.clientWidth / Math.max(1, canvas.clientHeight);
-    camera.left = -view.size * aspect;
-    camera.right = view.size * aspect;
-    camera.top = view.size;
-    camera.bottom = -view.size;
+    // portrait screens fit by height, which would crop the 60 m axis badly —
+    // widen the frame as the viewport narrows
+    const fit = aspect < 1.3 ? clamp(1.3 / aspect, 1, 2.6) : 1;
+    const s = view.size * fit;
+    camera.left = -s * aspect;
+    camera.right = s * aspect;
+    camera.top = s;
+    camera.bottom = -s;
     const r = 120;
     const ce = Math.cos(view.elevation), se = Math.sin(view.elevation);
     camera.position.set(
@@ -1013,21 +1017,42 @@
   });
   refreshChips();
 
-  // orbit: drag to rotate, wheel to zoom
-  let dragging = false, px0 = 0, py0 = 0;
+  // orbit: drag to rotate, wheel or two-finger pinch to zoom
+  const pointers = new Map();
+  let pinchDist = 0;
   canvas.addEventListener('pointerdown', (e) => {
-    dragging = true; px0 = e.clientX; py0 = e.clientY;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     canvas.setPointerCapture(e.pointerId);
+    if (pointers.size === 2) {
+      const [a, b] = [...pointers.values()];
+      pinchDist = Math.hypot(a.x - b.x, a.y - b.y);
+    }
   });
   canvas.addEventListener('pointermove', (e) => {
-    if (!dragging) return;
-    const dx = (e.clientX - px0) / canvas.clientWidth, dy = (e.clientY - py0) / canvas.clientHeight;
-    px0 = e.clientX; py0 = e.clientY;
+    const p = pointers.get(e.pointerId);
+    if (!p) return;
+    if (pointers.size === 2) {
+      p.x = e.clientX; p.y = e.clientY;
+      const [a, b] = [...pointers.values()];
+      const d = Math.hypot(a.x - b.x, a.y - b.y);
+      if (pinchDist > 0 && d > 0) {
+        viewGoal.size = clamp(viewGoal.size * pinchDist / d, 9, 42);
+      }
+      pinchDist = d;
+      return;
+    }
+    const dx = (e.clientX - p.x) / canvas.clientWidth, dy = (e.clientY - p.y) / canvas.clientHeight;
+    p.x = e.clientX; p.y = e.clientY;
     viewGoal.azimuth -= dx * 3.2;
     viewGoal.elevation = clamp(viewGoal.elevation + dy * 2.2, 0.22, 1.45);
     if (state.top) { state.top = false; refreshChips(); }
   });
-  window.addEventListener('pointerup', () => { dragging = false; });
+  function endPointer(e) {
+    pointers.delete(e.pointerId);
+    pinchDist = 0;
+  }
+  window.addEventListener('pointerup', endPointer);
+  window.addEventListener('pointercancel', endPointer);
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
     viewGoal.size = clamp(viewGoal.size * (e.deltaY > 0 ? 1.08 : 0.925), 9, 42);
