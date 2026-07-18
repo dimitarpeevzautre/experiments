@@ -59,14 +59,22 @@
     elevation: 0.56,     // radians
     target: new THREE.Vector3(0, 0, 1.5)
   };
-  const viewGoal = { size: view.size, azimuth: view.azimuth, elevation: view.elevation };
+  const viewGoal = {
+    size: view.size, azimuth: view.azimuth, elevation: view.elevation,
+    target: view.target.clone()
+  };
+  const HOME = { size: view.size, azimuth: view.azimuth, elevation: view.elevation, target: view.target.clone() };
 
-  function applyCamera() {
+  function fitFactor() {
     const aspect = canvas.clientWidth / Math.max(1, canvas.clientHeight);
     // portrait screens fit by height, which would crop the 60 m axis badly —
     // widen the frame as the viewport narrows
-    const fit = aspect < 1.3 ? clamp(1.3 / aspect, 1, 2.6) : 1;
-    const s = view.size * fit;
+    return aspect < 1.3 ? clamp(1.3 / aspect, 1, 2.6) : 1;
+  }
+
+  function applyCamera() {
+    const aspect = canvas.clientWidth / Math.max(1, canvas.clientHeight);
+    const s = view.size * fitFactor();
     camera.left = -s * aspect;
     camera.right = s * aspect;
     camera.top = s;
@@ -1045,7 +1053,7 @@
     systems: document.getElementById('chip-systems')
   };
   const state = { roof: true, xray: false, top: false, systems: false };
-  const savedView = { azimuth: view.azimuth, elevation: view.elevation, size: view.size };
+  const savedView = { azimuth: view.azimuth, elevation: view.elevation, size: view.size, target: view.target.clone() };
 
   function refreshChips() {
     chips.roof.textContent = state.roof ? 'Roof on' : 'Roof off';
@@ -1072,14 +1080,17 @@
   chips.top.addEventListener('click', () => {
     state.top = !state.top;
     if (state.top) {
-      savedView.azimuth = viewGoal.azimuth; savedView.elevation = viewGoal.elevation; savedView.size = viewGoal.size;
+      savedView.azimuth = viewGoal.azimuth; savedView.elevation = viewGoal.elevation;
+      savedView.size = viewGoal.size; savedView.target.copy(viewGoal.target);
       viewGoal.elevation = 1.54;
       viewGoal.azimuth = 0; // long axis horizontal on screen
       viewGoal.size = 23;
+      viewGoal.target.set(0, 0, 1.5);
     } else {
       viewGoal.azimuth = savedView.azimuth;
       viewGoal.elevation = savedView.elevation;
       viewGoal.size = savedView.size;
+      viewGoal.target.copy(savedView.target);
     }
     refreshChips();
   });
@@ -1090,15 +1101,34 @@
   });
   refreshChips();
 
-  // orbit: drag to rotate, wheel or two-finger pinch to zoom
+  // controls: drag to orbit · right/shift-drag (or two-finger drag) to pan ·
+  // wheel / pinch to zoom · double-click to reset
   const pointers = new Map();
-  let pinchDist = 0;
+  let pinchDist = 0, pinchMid = null;
+
+  function panBy(dxPx, dyPx) {
+    // move the target along the camera's screen axes; ortho makes this exact
+    const s = view.size * fitFactor();
+    const aspect = canvas.clientWidth / Math.max(1, canvas.clientHeight);
+    const dxWorld = (dxPx / canvas.clientWidth) * 2 * s * aspect;
+    const dyWorld = (dyPx / canvas.clientHeight) * 2 * s;
+    const m = camera.matrixWorld.elements;
+    viewGoal.target.addScaledVector(new THREE.Vector3(m[0], m[1], m[2]), -dxWorld);
+    viewGoal.target.addScaledVector(new THREE.Vector3(m[4], m[5], m[6]), dyWorld);
+    viewGoal.target.x = clamp(viewGoal.target.x, -36, 36);
+    viewGoal.target.y = clamp(viewGoal.target.y, -6, 14);
+    viewGoal.target.z = clamp(viewGoal.target.z, -26, 26);
+  }
+
+  canvas.addEventListener('contextmenu', (e) => e.preventDefault());
   canvas.addEventListener('pointerdown', (e) => {
-    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    const pan = e.button === 2 || e.button === 1 || e.shiftKey || e.ctrlKey;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, pan });
     canvas.setPointerCapture(e.pointerId);
     if (pointers.size === 2) {
       const [a, b] = [...pointers.values()];
       pinchDist = Math.hypot(a.x - b.x, a.y - b.y);
+      pinchMid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
     }
   });
   canvas.addEventListener('pointermove', (e) => {
@@ -1108,21 +1138,29 @@
       p.x = e.clientX; p.y = e.clientY;
       const [a, b] = [...pointers.values()];
       const d = Math.hypot(a.x - b.x, a.y - b.y);
+      const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
       if (pinchDist > 0 && d > 0) {
         viewGoal.size = clamp(viewGoal.size * pinchDist / d, 9, 42);
       }
+      if (pinchMid) panBy(mid.x - pinchMid.x, mid.y - pinchMid.y);
       pinchDist = d;
+      pinchMid = mid;
       return;
     }
-    const dx = (e.clientX - p.x) / canvas.clientWidth, dy = (e.clientY - p.y) / canvas.clientHeight;
+    const dxPx = e.clientX - p.x, dyPx = e.clientY - p.y;
     p.x = e.clientX; p.y = e.clientY;
-    viewGoal.azimuth -= dx * 3.2;
-    viewGoal.elevation = clamp(viewGoal.elevation + dy * 2.2, 0.22, 1.45);
+    if (p.pan) {
+      panBy(dxPx, dyPx);
+      return;
+    }
+    viewGoal.azimuth -= dxPx / canvas.clientWidth * 3.2;
+    viewGoal.elevation = clamp(viewGoal.elevation + dyPx / canvas.clientHeight * 2.2, 0.22, 1.45);
     if (state.top) { state.top = false; refreshChips(); }
   });
   function endPointer(e) {
     pointers.delete(e.pointerId);
     pinchDist = 0;
+    pinchMid = null;
   }
   window.addEventListener('pointerup', endPointer);
   window.addEventListener('pointercancel', endPointer);
@@ -1130,6 +1168,13 @@
     e.preventDefault();
     viewGoal.size = clamp(viewGoal.size * (e.deltaY > 0 ? 1.08 : 0.925), 9, 42);
   }, { passive: false });
+  canvas.addEventListener('dblclick', () => {
+    viewGoal.size = HOME.size;
+    viewGoal.azimuth = HOME.azimuth;
+    viewGoal.elevation = HOME.elevation;
+    viewGoal.target.copy(HOME.target);
+    if (state.top) { state.top = false; refreshChips(); }
+  });
 
   const compass = document.getElementById('compass');
 
@@ -1143,6 +1188,7 @@
     view.azimuth += (viewGoal.azimuth - view.azimuth) * k;
     view.elevation += (viewGoal.elevation - view.elevation) * k;
     view.size += (viewGoal.size - view.size) * k;
+    view.target.lerp(viewGoal.target, k);
     applyCamera();
     // site north lies 135° clockwise of −z (along the +x/+z diagonal);
     // projected to screen, the needle's clockwise angle from screen-up is azimuth + 135°
