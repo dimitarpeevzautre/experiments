@@ -1055,8 +1055,8 @@
     scene.add(petals.points);
   }
 
-  // ---------- butterflies & birds ----------
-  const butterflies = [], birds = [];
+  // ---------- butterflies ----------
+  const butterflies = [];
   {
     const wingR = new THREE.PlaneGeometry(0.17, 0.12);
     wingR.translate(0.095, 0, 0);
@@ -1087,28 +1087,6 @@
         const gy = groundHeight(spots[i][0], spots[i][1]);
         g.position.set(spots[i][0], gy + 0.35, spots[i][1]);
         wl.rotation.z = -0.25; wr.rotation.z = 0.25;
-      }
-    }
-    if (!reduceMotion) {
-      const wingGeo = new THREE.BoxGeometry(0.95, 0.02, 0.2);
-      wingGeo.translate(0.45, 0, 0);
-      const birdMat = std(0x3d3630, { roughness: 0.9 });
-      for (let i = 0; i < 3; i++) {
-        const g = new THREE.Group();
-        const wr = new THREE.Mesh(wingGeo, birdMat);
-        const wl = new THREE.Mesh(wingGeo, birdMat);
-        wl.scale.x = -1;
-        const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.06, 0.3, 3, 6), birdMat);
-        body.rotation.x = Math.PI / 2; // capsule long axis along the flight direction
-        for (const m of [wl, wr, body]) m.castShadow = false;
-        g.add(wl, wr, body);
-        scene.add(g);
-        birds.push({
-          g, wl, wr,
-          cx: rr(-8, 2), cz: rr(-4, 4), r: rr(13, 19),
-          w: rr(0.055, 0.085) * (i % 2 ? 1 : -1),
-          h: rr(11, 15), ph: rr(0, 6.28), fp: rr(0, 6.28)
-        });
       }
     }
   }
@@ -1548,19 +1526,6 @@
         b.wr.rotation.z = flap;
         b.wl.rotation.z = -flap;
       }
-      for (const b of birds) {
-        const ang = t * b.w + b.ph;
-        const x = b.cx + Math.cos(ang) * b.r;
-        const z = b.cz + Math.sin(ang) * b.r;
-        b.g.position.set(x, b.h + Math.sin(t * 0.4 + b.ph) * 0.9, z);
-        const dir = Math.sign(b.w);
-        b.g.rotation.y = Math.atan2(-Math.sin(ang) * dir, Math.cos(ang) * dir);
-        b.g.rotation.z = 0.16 * dir; // gentle bank into the circle
-        const flap = 0.24 + 0.16 * Math.sin(t * 2.1 + b.fp);
-        b.wr.rotation.z = flap;
-        b.wl.rotation.z = -flap;
-      }
-
       // the pack picks a new spot on the lawn every few seconds
       if (t > pack.next) {
         for (let k = 0; k < 24; k++) {
