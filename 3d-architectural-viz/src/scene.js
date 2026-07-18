@@ -447,8 +447,8 @@
   roofGroup.add(roofPlane(1), roofPlane(-1));
   // ridge cap
   roofGroup.add(mesh(new THREE.BoxGeometry(0.3, 0.12, L + OVER * 2), std(C.roofEdge), 0, 0.35 + RIDGE_H + 0.1, 0));
-  // flue
-  roofGroup.add(mesh(new THREE.CylinderGeometry(0.12, 0.12, 1.4, 10), std(C.metal, { metalness: 0.5, roughness: 0.45 }), 1.4, 0.35 + RIDGE_H - m2y(1.4) + 0.6, -2.4));
+  // flue, above the wood stove in the front room
+  roofGroup.add(mesh(new THREE.CylinderGeometry(0.12, 0.12, 1.4, 10), std(C.metal, { metalness: 0.5, roughness: 0.45 }), 2.3, 0.35 + RIDGE_H - m2y(2.3) + 0.6, -0.45));
   function m2y(x) { return roofSlope * x; }
 
   // solar arrays on both roof planes — south runs along the plot diagonal,
@@ -539,6 +539,14 @@
     inter.add(mesh(new THREE.CylinderGeometry(0.14, 0.18, 0.22, 10), std(0xe8ddc8, { roughness: 1 }), 2.3, y0 + 1.45, 2.7));
     inter.add(mesh(new THREE.CylinderGeometry(0.16, 0.13, 0.3, 10), std(0x9c7a5c), -2.4, y0 + 0.15, 3.3));
     inter.add(mesh(blobGeometry(0.28, 1, 0.4), std(C.leaf, { roughness: 1 }), -2.4, y0 + 0.55, 3.3));
+    // wood stove under the flue, external-air winter heat
+    const stove = mesh(new THREE.BoxGeometry(0.42, 0.58, 0.38), std(0x24211e, { roughness: 0.6, metalness: 0.25 }), 2.35, y0 + 0.33, -0.45);
+    inter.add(stove);
+    const fireGlow = mesh(new THREE.PlaneGeometry(0.18, 0.13), new THREE.MeshBasicMaterial({ color: 0xff9a3d }), 2.13, y0 + 0.32, -0.45);
+    fireGlow.rotation.y = -Math.PI / 2;
+    fireGlow.castShadow = false;
+    inter.add(fireGlow);
+    inter.add(mesh(new THREE.CylinderGeometry(0.055, 0.055, 2.4, 8), std(C.metal, { metalness: 0.4, roughness: 0.5 }), 2.35, y0 + 1.82, -0.45));
     const rug = mesh(new THREE.CircleGeometry(0.95, 24), std(0xc4a98a, { roughness: 1 }), 1.5, y0 + 0.005, 1.3);
     rug.rotation.x = -Math.PI / 2; rug.castShadow = false;
     inter.add(rug);
@@ -591,6 +599,18 @@
     cabin.add(bat);
     bat.updateWorldMatrix(true, false);
     batteryAnchor.set(0.2, 1.7, 0).applyMatrix4(bat.matrixWorld);
+  }
+
+  // heat pump outdoor unit on the south wall, beside the battery
+  {
+    const hp = new THREE.Group();
+    hp.position.set(W / 2 + 0.16, 0.35, 0.8);
+    hp.add(mesh(new THREE.BoxGeometry(0.3, 0.62, 0.88), std(0xdcd7ca, { roughness: 0.55 }), 0.15, 0.45, 0));
+    const fan = mesh(new THREE.CylinderGeometry(0.21, 0.21, 0.03, 18), std(0x565a56, { roughness: 0.6 }), 0.32, 0.48, -0.16);
+    fan.rotation.z = Math.PI / 2;
+    hp.add(fan);
+    hp.add(mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.5, 6), std(C.metal), 0.12, 0.15, 0.5));
+    cabin.add(hp);
   }
 
   // stone step at door
@@ -965,6 +985,19 @@
     anchors.leach = new THREE.Vector3(26.6, groundHeight(26.6, -1.5) + 0.15, -1.5);
   }
 
+  // backup generator on a pad behind the cabin, near the cistern
+  {
+    const gx = 19.5, gz = 17.5, gy = groundHeight(gx, gz);
+    const gen = new THREE.Group();
+    gen.position.set(gx, gy, gz);
+    gen.add(mesh(new THREE.BoxGeometry(1.2, 0.1, 0.9), std(C.concrete, { roughness: 0.95 }), 0, 0.05, 0));
+    gen.add(mesh(new THREE.BoxGeometry(0.95, 0.6, 0.65), std(0x6d6f62, { roughness: 0.7 }), 0, 0.42, 0));
+    gen.add(mesh(new THREE.BoxGeometry(0.97, 0.08, 0.67), std(0x4c4e45, { roughness: 0.7 }), 0, 0.74, 0));
+    gen.add(mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.24, 6), std(C.metal, { metalness: 0.5 }), 0.35, 0.9, -0.18));
+    systems.add(gen);
+    anchors.generator = new THREE.Vector3(gx, gy + 1.0, gz);
+  }
+
   // solar + battery anchors
   {
     const roofPt = new THREE.Vector3(W / 4, 0.35 + RIDGE_H - 0.4, 0)
@@ -1018,6 +1051,7 @@
   makeLabel('Rain cistern 10 m³', anchors.cistern, new THREE.Vector3(-2, 1.6, -1));
   makeLabel('Borehole well', anchors.well, new THREE.Vector3(-3, 1.6, 1));
   makeLabel('Septic tank', anchors.septic, new THREE.Vector3(4, 0.6, 4));
+  makeLabel('Backup generator 5 kW', anchors.generator, new THREE.Vector3(-5, 1.6, 3));
   makeLabel('Leach field', anchors.leach, new THREE.Vector3(3, 1.6, 2));
 
   // ---------- drifting petals ----------
@@ -1467,6 +1501,18 @@
     refreshChips();
   });
   refreshChips();
+
+  // small API for the project drawer (and future budgeting/progress panels)
+  window.caroline = {
+    getSystems: () => state.systems,
+    setSystems(v) {
+      v = !!v;
+      if (state.systems === v) return;
+      state.systems = v;
+      labels.visible = v;
+      refreshChips();
+    }
+  };
 
   // controls: drag to orbit · right/shift-drag (or two-finger drag) to pan ·
   // wheel / pinch to zoom · double-click to reset

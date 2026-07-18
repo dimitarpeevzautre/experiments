@@ -101,6 +101,55 @@
     header h1 { font-size: 1.3rem; letter-spacing: 0.12em; }
     header p { font-size: 0.62rem; letter-spacing: 0.16em; }
   }
+
+  /* project brief drawer */
+  #drawer {
+    position: fixed; top: 0; right: 0; bottom: 0;
+    width: min(440px, 94vw);
+    background: rgba(250, 243, 231, 0.96);
+    border-left: 1px solid rgba(90, 60, 35, 0.35);
+    box-shadow: -18px 0 44px rgba(60, 40, 20, 0.2);
+    transform: translateX(105%);
+    transition: transform 0.5s cubic-bezier(0.22, 0.8, 0.24, 1);
+    overflow-y: auto;
+    z-index: 30;
+    color: var(--ink);
+    padding: 30px 30px 44px;
+    box-sizing: border-box;
+  }
+  #drawer.open { transform: none; }
+  #drawer .eyebrow {
+    font-size: 0.66rem; letter-spacing: 0.26em; text-transform: uppercase;
+    color: var(--ink-soft); margin: 0 0 0.45em;
+  }
+  #drawer h2 {
+    font-size: 1.55rem; font-weight: 500; letter-spacing: 0.05em;
+    margin: 0 0 1em; text-wrap: balance;
+  }
+  #drawer .overview { margin: 0 0 1.7em; display: grid; gap: 0.6em; }
+  #drawer .overview div { display: grid; grid-template-columns: 7.2em 1fr; gap: 0.9em; }
+  #drawer .overview dt {
+    font-size: 0.64rem; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--ink-soft); padding-top: 0.3em;
+  }
+  #drawer .overview dd { margin: 0; font-size: 0.92rem; line-height: 1.5; }
+  #drawer .component { border-top: 1px solid rgba(90, 60, 35, 0.25); padding: 1.15em 0 0.45em; }
+  #drawer .spec { font-size: 0.92rem; line-height: 1.55; margin: 0.1em 0 0.6em; font-style: italic; }
+  #drawer .why { font-size: 0.88rem; line-height: 1.62; margin: 0 0 0.7em; color: rgba(74, 53, 38, 0.9); }
+  #drawer .roadmap {
+    border-top: 1px solid rgba(90, 60, 35, 0.25);
+    margin-top: 1.5em; padding-top: 1.1em;
+    font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--ink-soft); line-height: 1.7;
+  }
+  #drawer-close {
+    position: absolute; top: 12px; right: 14px;
+    font: inherit; font-size: 1.6rem; line-height: 1;
+    background: none; border: none; color: inherit;
+    cursor: pointer; padding: 6px 10px;
+  }
+  #drawer-close:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { #drawer { transition: none; } }
 </style>
 
 <div id="stage"><canvas id="scene"></canvas></div>
@@ -122,6 +171,7 @@
     </svg>
     N
   </div>
+  <button id="chip-project" type="button">Project</button>
   <button id="chip-roof" type="button">Roof on</button>
   <button id="chip-xray" type="button">X-ray walls</button>
   <button id="chip-systems" type="button">Systems</button>
@@ -131,3 +181,4 @@
 
 <script>{{THREE}}</script>
 <script>{{SCENE}}</script>
+<script>{{PROJECT}}</script>

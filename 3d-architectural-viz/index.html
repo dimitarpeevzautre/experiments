@@ -108,6 +108,55 @@
     header h1 { font-size: 1.3rem; letter-spacing: 0.12em; }
     header p { font-size: 0.62rem; letter-spacing: 0.16em; }
   }
+
+  /* project brief drawer */
+  #drawer {
+    position: fixed; top: 0; right: 0; bottom: 0;
+    width: min(440px, 94vw);
+    background: rgba(250, 243, 231, 0.96);
+    border-left: 1px solid rgba(90, 60, 35, 0.35);
+    box-shadow: -18px 0 44px rgba(60, 40, 20, 0.2);
+    transform: translateX(105%);
+    transition: transform 0.5s cubic-bezier(0.22, 0.8, 0.24, 1);
+    overflow-y: auto;
+    z-index: 30;
+    color: var(--ink);
+    padding: 30px 30px 44px;
+    box-sizing: border-box;
+  }
+  #drawer.open { transform: none; }
+  #drawer .eyebrow {
+    font-size: 0.66rem; letter-spacing: 0.26em; text-transform: uppercase;
+    color: var(--ink-soft); margin: 0 0 0.45em;
+  }
+  #drawer h2 {
+    font-size: 1.55rem; font-weight: 500; letter-spacing: 0.05em;
+    margin: 0 0 1em; text-wrap: balance;
+  }
+  #drawer .overview { margin: 0 0 1.7em; display: grid; gap: 0.6em; }
+  #drawer .overview div { display: grid; grid-template-columns: 7.2em 1fr; gap: 0.9em; }
+  #drawer .overview dt {
+    font-size: 0.64rem; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--ink-soft); padding-top: 0.3em;
+  }
+  #drawer .overview dd { margin: 0; font-size: 0.92rem; line-height: 1.5; }
+  #drawer .component { border-top: 1px solid rgba(90, 60, 35, 0.25); padding: 1.15em 0 0.45em; }
+  #drawer .spec { font-size: 0.92rem; line-height: 1.55; margin: 0.1em 0 0.6em; font-style: italic; }
+  #drawer .why { font-size: 0.88rem; line-height: 1.62; margin: 0 0 0.7em; color: rgba(74, 53, 38, 0.9); }
+  #drawer .roadmap {
+    border-top: 1px solid rgba(90, 60, 35, 0.25);
+    margin-top: 1.5em; padding-top: 1.1em;
+    font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--ink-soft); line-height: 1.7;
+  }
+  #drawer-close {
+    position: absolute; top: 12px; right: 14px;
+    font: inherit; font-size: 1.6rem; line-height: 1;
+    background: none; border: none; color: inherit;
+    cursor: pointer; padding: 6px 10px;
+  }
+  #drawer-close:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { #drawer { transition: none; } }
 </style>
 
 <div id="stage"><canvas id="scene"></canvas></div>
@@ -129,6 +178,7 @@
     </svg>
     N
   </div>
+  <button id="chip-project" type="button">Project</button>
   <button id="chip-roof" type="button">Roof on</button>
   <button id="chip-xray" type="button">X-ray walls</button>
   <button id="chip-systems" type="button">Systems</button>
@@ -593,8 +643,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   roofGroup.add(roofPlane(1), roofPlane(-1));
   // ridge cap
   roofGroup.add(mesh(new THREE.BoxGeometry(0.3, 0.12, L + OVER * 2), std(C.roofEdge), 0, 0.35 + RIDGE_H + 0.1, 0));
-  // flue
-  roofGroup.add(mesh(new THREE.CylinderGeometry(0.12, 0.12, 1.4, 10), std(C.metal, { metalness: 0.5, roughness: 0.45 }), 1.4, 0.35 + RIDGE_H - m2y(1.4) + 0.6, -2.4));
+  // flue, above the wood stove in the front room
+  roofGroup.add(mesh(new THREE.CylinderGeometry(0.12, 0.12, 1.4, 10), std(C.metal, { metalness: 0.5, roughness: 0.45 }), 2.3, 0.35 + RIDGE_H - m2y(2.3) + 0.6, -0.45));
   function m2y(x) { return roofSlope * x; }
 
   // solar arrays on both roof planes — south runs along the plot diagonal,
@@ -685,6 +735,14 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     inter.add(mesh(new THREE.CylinderGeometry(0.14, 0.18, 0.22, 10), std(0xe8ddc8, { roughness: 1 }), 2.3, y0 + 1.45, 2.7));
     inter.add(mesh(new THREE.CylinderGeometry(0.16, 0.13, 0.3, 10), std(0x9c7a5c), -2.4, y0 + 0.15, 3.3));
     inter.add(mesh(blobGeometry(0.28, 1, 0.4), std(C.leaf, { roughness: 1 }), -2.4, y0 + 0.55, 3.3));
+    // wood stove under the flue, external-air winter heat
+    const stove = mesh(new THREE.BoxGeometry(0.42, 0.58, 0.38), std(0x24211e, { roughness: 0.6, metalness: 0.25 }), 2.35, y0 + 0.33, -0.45);
+    inter.add(stove);
+    const fireGlow = mesh(new THREE.PlaneGeometry(0.18, 0.13), new THREE.MeshBasicMaterial({ color: 0xff9a3d }), 2.13, y0 + 0.32, -0.45);
+    fireGlow.rotation.y = -Math.PI / 2;
+    fireGlow.castShadow = false;
+    inter.add(fireGlow);
+    inter.add(mesh(new THREE.CylinderGeometry(0.055, 0.055, 2.4, 8), std(C.metal, { metalness: 0.4, roughness: 0.5 }), 2.35, y0 + 1.82, -0.45));
     const rug = mesh(new THREE.CircleGeometry(0.95, 24), std(0xc4a98a, { roughness: 1 }), 1.5, y0 + 0.005, 1.3);
     rug.rotation.x = -Math.PI / 2; rug.castShadow = false;
     inter.add(rug);
@@ -737,6 +795,18 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     cabin.add(bat);
     bat.updateWorldMatrix(true, false);
     batteryAnchor.set(0.2, 1.7, 0).applyMatrix4(bat.matrixWorld);
+  }
+
+  // heat pump outdoor unit on the south wall, beside the battery
+  {
+    const hp = new THREE.Group();
+    hp.position.set(W / 2 + 0.16, 0.35, 0.8);
+    hp.add(mesh(new THREE.BoxGeometry(0.3, 0.62, 0.88), std(0xdcd7ca, { roughness: 0.55 }), 0.15, 0.45, 0));
+    const fan = mesh(new THREE.CylinderGeometry(0.21, 0.21, 0.03, 18), std(0x565a56, { roughness: 0.6 }), 0.32, 0.48, -0.16);
+    fan.rotation.z = Math.PI / 2;
+    hp.add(fan);
+    hp.add(mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.5, 6), std(C.metal), 0.12, 0.15, 0.5));
+    cabin.add(hp);
   }
 
   // stone step at door
@@ -1111,6 +1181,19 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     anchors.leach = new THREE.Vector3(26.6, groundHeight(26.6, -1.5) + 0.15, -1.5);
   }
 
+  // backup generator on a pad behind the cabin, near the cistern
+  {
+    const gx = 19.5, gz = 17.5, gy = groundHeight(gx, gz);
+    const gen = new THREE.Group();
+    gen.position.set(gx, gy, gz);
+    gen.add(mesh(new THREE.BoxGeometry(1.2, 0.1, 0.9), std(C.concrete, { roughness: 0.95 }), 0, 0.05, 0));
+    gen.add(mesh(new THREE.BoxGeometry(0.95, 0.6, 0.65), std(0x6d6f62, { roughness: 0.7 }), 0, 0.42, 0));
+    gen.add(mesh(new THREE.BoxGeometry(0.97, 0.08, 0.67), std(0x4c4e45, { roughness: 0.7 }), 0, 0.74, 0));
+    gen.add(mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.24, 6), std(C.metal, { metalness: 0.5 }), 0.35, 0.9, -0.18));
+    systems.add(gen);
+    anchors.generator = new THREE.Vector3(gx, gy + 1.0, gz);
+  }
+
   // solar + battery anchors
   {
     const roofPt = new THREE.Vector3(W / 4, 0.35 + RIDGE_H - 0.4, 0)
@@ -1164,6 +1247,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   makeLabel('Rain cistern 10 m³', anchors.cistern, new THREE.Vector3(-2, 1.6, -1));
   makeLabel('Borehole well', anchors.well, new THREE.Vector3(-3, 1.6, 1));
   makeLabel('Septic tank', anchors.septic, new THREE.Vector3(4, 0.6, 4));
+  makeLabel('Backup generator 5 kW', anchors.generator, new THREE.Vector3(-5, 1.6, 3));
   makeLabel('Leach field', anchors.leach, new THREE.Vector3(3, 1.6, 2));
 
   // ---------- drifting petals ----------
@@ -1614,6 +1698,18 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   });
   refreshChips();
 
+  // small API for the project drawer (and future budgeting/progress panels)
+  window.caroline = {
+    getSystems: () => state.systems,
+    setSystems(v) {
+      v = !!v;
+      if (state.systems === v) return;
+      state.systems = v;
+      labels.visible = v;
+      refreshChips();
+    }
+  };
+
   // controls: drag to orbit · right/shift-drag (or two-finger drag) to pan ·
   // wheel / pinch to zoom · double-click to reset
   const pointers = new Map();
@@ -1878,6 +1974,96 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   }
   resize();
   tick();
+})();
+</script>
+<script>/* CAROLINE — project context: the off-grid micro-estate brief.
+   Data-first: the PROJECT object is the single source of truth so budgeting,
+   planning and progress tracking can attach to the same records later. */
+(function () {
+  'use strict';
+
+  const PROJECT = {
+    title: 'The Off-Grid Micro-Estate',
+    overview: [
+      ['Plot', '40 × 60 m — 2,400 m²'],
+      ['Topography', 'Gentle southern slope, ideal for solar exposure and gravity-fed infrastructure'],
+      ['Philosophy', 'Passive resource management, automated solar-syncing, zero-grid reliance']
+    ],
+    components: [
+      {
+        id: 'energy',
+        name: 'The energy plant',
+        spec: '11 kWp photovoltaic array · 10 kWh lithium storage · 4–5 kW auto-start (AGS) backup inverter generator',
+        motivation: 'Highly asymmetric sizing. The oversized 11 kWp array keeps the system generating enough power even on heavily overcast winter days, while the compact 10 kWh battery is optimised for overnight residential loads rather than multi-day storage. A smart generator bridges rare winter deficits far more cost-effectively than adding heavy chemical batteries.',
+        budget: null, status: null, progress: null
+      },
+      {
+        id: 'living',
+        name: 'The living space',
+        spec: '8 × 6 × 3 m bungalow (48 m²) · high-efficiency inverter heat pump for summer cooling · 4–6 kW wood stove with external air intake for winter heating',
+        motivation: 'Seasonal load shifting. In summer, cooling runs entirely on real-time solar surplus. In winter, heating — the heaviest off-grid electrical drain — shifts entirely to biomass. That preserves the 10 kWh battery, keeps generator runtimes low, and lets the building’s thermal mass hold a safe baseline above freezing.',
+        budget: null, status: null, progress: null
+      },
+      {
+        id: 'hydro',
+        name: 'The hydro loop',
+        spec: '40 m borehole with deep submersible pump on a smart solar-clipping controller · 10,000-litre cistern at the high point of the slope',
+        motivation: 'Water as a battery. Pumping from 40 m is energy-intensive, so instead of drawing on the electrical battery at night or under cloud, the pump runs only between 11:00 and 15:00 when solar production peaks. The 10 m³ cistern is a potential-energy reservoir: the slope delivers gravity-fed, zero-power irrigation.',
+        budget: null, status: null, progress: null
+      },
+      {
+        id: 'pond',
+        name: 'The ecosystem',
+        spec: 'Natural swimming pond · chemical-free biological filtration · 50–100 W ultra-low-draw eco-pump running continuously',
+        motivation: 'Low, steady-state baseload. Unlike the borehole pump, pond filtration needs constant, predictable circulation — about 2.4 kWh per day, easily absorbed by the summer surplus and intentionally scaled down or winterised in the dark months when biological activity naturally ceases.',
+        budget: null, status: null, progress: null
+      }
+    ],
+    roadmap: 'Next: budgeting, planning and build progress will attach to these components.'
+  };
+  window.PROJECT = PROJECT;
+
+  // ---------- drawer ----------
+  const drawer = document.createElement('aside');
+  drawer.id = 'drawer';
+  drawer.setAttribute('role', 'dialog');
+  drawer.setAttribute('aria-label', 'Project brief');
+  const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  drawer.innerHTML = `
+    <button id="drawer-close" type="button" aria-label="Close project brief">×</button>
+    <p class="eyebrow">Project brief</p>
+    <h2>${esc(PROJECT.title)}</h2>
+    <dl class="overview">
+      ${PROJECT.overview.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}
+    </dl>
+    ${PROJECT.components.map((c, i) => `
+      <section class="component" data-id="${c.id}">
+        <p class="eyebrow">${String(i + 1).padStart(2, '0')} · ${esc(c.name)}</p>
+        <p class="spec">${esc(c.spec)}</p>
+        <p class="why">${esc(c.motivation)}</p>
+      </section>`).join('')}
+    <p class="roadmap">${esc(PROJECT.roadmap)}</p>
+  `;
+  document.body.appendChild(drawer);
+
+  const chip = document.getElementById('chip-project');
+  const closeBtn = drawer.querySelector('#drawer-close');
+  let open = false;
+  let systemsWereOn = false;
+  function setOpen(v) {
+    open = v;
+    drawer.classList.toggle('open', open);
+    chip.classList.toggle('active', open);
+    // surface the matching site systems while the brief is open
+    const api = window.caroline;
+    if (api) {
+      if (open) { systemsWereOn = api.getSystems(); api.setSystems(true); }
+      else if (!systemsWereOn) api.setSystems(false);
+    }
+  }
+  chip.addEventListener('click', () => setOpen(!open));
+  closeBtn.addEventListener('click', () => setOpen(false));
+  window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && open) setOpen(false); });
 })();
 </script>
 

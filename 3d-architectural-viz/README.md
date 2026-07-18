@@ -26,6 +26,9 @@ Controls:
 - **Roof on/off** — lift the roof and solar array
 - **X-ray walls** — see through the timber walls to the furnished interior
 - **Systems** — label the off-grid infrastructure
+- **Project** — slide-in brief: plot, topography, philosophy, and per-component
+  specs with their engineering motivations (energy plant, living space, hydro
+  loop, ecosystem); opening it surfaces the systems labels on the model
 - **Top view** — plan view of the whole site
 - **Sound** — calm generative ambient loop (WebAudio, no assets)
 
@@ -40,6 +43,9 @@ All motion respects `prefers-reduced-motion`.
 - `src/scene.js` — the scene: terrain heightfield with carved pool basin,
   procedural cabin, instanced blossom canopies, site systems, camera and UI
   wiring (deterministic, seeded PRNG)
+- `src/project.js` — the project brief as data (`window.PROJECT`) plus the
+  drawer UI; each component record carries empty `budget`/`status`/`progress`
+  fields so budgeting, planning and progress tracking can attach next
 - `src/page.html` — page shell: title plate, control chips, golden-hour CSS
 - `vendor/three.min.js` — pinned Three.js r160 (UMD build)
 - `build.py` — inlines vendor + scene into `src/page.html` → `index.html`

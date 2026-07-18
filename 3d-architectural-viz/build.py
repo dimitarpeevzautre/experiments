@@ -13,6 +13,7 @@ THREE = sys.argv[1] if len(sys.argv) > 1 else str(ROOT / "vendor" / "three.min.j
 page = (ROOT / "src" / "page.html").read_text()
 three = pathlib.Path(THREE).read_text()
 scene = (ROOT / "src" / "scene.js").read_text()
+project = (ROOT / "src" / "project.js").read_text()
 
 # the UMD build's deprecation warning is noise in a deliberately pinned vendor copy
 three = three.replace(
@@ -21,7 +22,7 @@ three = three.replace(
     1,
 )
 
-body = page.replace("{{THREE}}", three).replace("{{SCENE}}", scene)
+body = page.replace("{{THREE}}", three).replace("{{SCENE}}", scene).replace("{{PROJECT}}", project)
 
 full = (
     "<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n"
