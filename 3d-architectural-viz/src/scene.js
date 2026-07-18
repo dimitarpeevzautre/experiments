@@ -290,11 +290,18 @@
     mesh.receiveShadow = true;
     return mesh;
   }
-  // drive enters from the top edge, passes the borehole, skirts the pool's
-  // north rim and arrives at the cabin's glazed gable
-  const mainPath = [[2, -20.6], [0, -15], [1.5, -8], [4.5, -3], [7.5, -0.5], [10.5, 3], [12.5, 6.5], [15.6, 12]];
+  // the road runs along the north-west side (the x=+30 edge), so the drive
+  // enters there, swings south of the leach field and climbs to the gable door
+  const mainPath = [[30.8, -12], [26, -10.5], [21.5, -7.5], [18, -3.5], [15.5, 0.5], [14, 4], [14.5, 8], [15.8, 11.8]];
   land.add(pathRibbon(mainPath, 2.0, C.path, 0.055));
   land.add(pathRibbon(mainPath, 2.5, C.pathEdge, 0.03));
+  // stone gate posts where the drive meets the road
+  for (const s of [-1, 1]) {
+    const px = 29.6, pz = -12 + s * 1.9;
+    const gy = groundHeight(px, pz);
+    land.add(mesh(new THREE.BoxGeometry(0.35, 1.05, 0.35), std(C.stoneGrey, { roughness: 1 }), px, gy + 0.5, pz));
+    land.add(mesh(new THREE.BoxGeometry(0.46, 0.12, 0.46), std(C.stone, { roughness: 1 }), px, gy + 1.08, pz));
+  }
 
   // ---------- helpers ----------
   function std(color, opts) {
