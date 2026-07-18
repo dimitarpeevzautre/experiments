@@ -21,11 +21,16 @@ is inlined, no network access needed).
 
 Controls:
 
-- **drag** to orbit, **scroll** to zoom
+- **drag** to orbit, **right/shift-drag** (two-finger drag on touch) to pan,
+  **scroll / pinch** to zoom, **double-click** to reset
 - **Roof on/off** — lift the roof and solar array
 - **X-ray walls** — see through the timber walls to the furnished interior
 - **Systems** — label the off-grid infrastructure
 - **Top view** — plan view of the whole site
+- **Sound** — calm generative ambient loop (WebAudio, no assets)
+
+Drifting petals, butterflies and circling birds animate the scene; all motion
+respects `prefers-reduced-motion`.
 
 ## Structure
 

@@ -1045,14 +1045,156 @@
     scene.add(petals.points);
   }
 
+  // ---------- butterflies & birds ----------
+  const butterflies = [], birds = [];
+  {
+    const wingR = new THREE.PlaneGeometry(0.17, 0.12);
+    wingR.translate(0.095, 0, 0);
+    wingR.rotateX(-Math.PI / 2);
+    const wingL = new THREE.PlaneGeometry(0.17, 0.12);
+    wingL.translate(-0.095, 0, 0);
+    wingL.rotateX(-Math.PI / 2);
+    const bodyGeo = new THREE.CapsuleGeometry(0.016, 0.1, 3, 6);
+    bodyGeo.rotateX(Math.PI / 2);
+    const bCols = [0xf6f1e2, 0xecd982, C.blossomB, 0xb8d4de, 0xf6f1e2, C.blossomA, 0xecd982];
+    const spots = [[1, 6.5], [7.5, 4], [-3, 3.5], [-12, 10], [-20, 8.5], [5, -2], [12, 9]];
+    for (let i = 0; i < spots.length; i++) {
+      const mat = new THREE.MeshStandardMaterial({ color: bCols[i], side: THREE.DoubleSide, roughness: 1 });
+      const g = new THREE.Group();
+      const wl = new THREE.Mesh(wingL, mat), wr = new THREE.Mesh(wingR, mat);
+      const body = new THREE.Mesh(bodyGeo, std(0x3a3028));
+      body.castShadow = false;
+      g.add(wl, wr, body);
+      scene.add(g);
+      butterflies.push({
+        g, wl, wr, ax: spots[i][0], az: spots[i][1],
+        rx: rr(1.2, 2.6), rz: rr(1.2, 2.6),
+        wx: rr(0.25, 0.5), wz: rr(0.3, 0.55), wy: rr(0.8, 1.4),
+        px: rr(0, 6.28), pz: rr(0, 6.28), py: rr(0, 6.28),
+        flap: rr(9, 13), fp: rr(0, 6.28)
+      });
+      if (reduceMotion) { // perch, wings open
+        const gy = groundHeight(spots[i][0], spots[i][1]);
+        g.position.set(spots[i][0], gy + 0.35, spots[i][1]);
+        wl.rotation.z = -0.25; wr.rotation.z = 0.25;
+      }
+    }
+    if (!reduceMotion) {
+      const wingGeo = new THREE.BoxGeometry(0.95, 0.02, 0.2);
+      wingGeo.translate(0.45, 0, 0);
+      const birdMat = std(0x3d3630, { roughness: 0.9 });
+      for (let i = 0; i < 3; i++) {
+        const g = new THREE.Group();
+        const wr = new THREE.Mesh(wingGeo, birdMat);
+        const wl = new THREE.Mesh(wingGeo, birdMat);
+        wl.scale.x = -1;
+        const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.06, 0.3, 3, 6), birdMat);
+        body.rotation.x = Math.PI / 2; // capsule long axis along the flight direction
+        for (const m of [wl, wr, body]) m.castShadow = false;
+        g.add(wl, wr, body);
+        scene.add(g);
+        birds.push({
+          g, wl, wr,
+          cx: rr(-8, 2), cz: rr(-4, 4), r: rr(13, 19),
+          w: rr(0.055, 0.085) * (i % 2 ? 1 : -1),
+          h: rr(11, 15), ph: rr(0, 6.28), fp: rr(0, 6.28)
+        });
+      }
+    }
+  }
+
+  // ---------- generative ambient loop (WebAudio, started by the Sound chip) ----------
+  const music = { ctx: null, master: null, timer: null, on: false };
+  function startMusic() {
+    try {
+      if (!music.ctx) {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const master = ctx.createGain();
+        master.gain.value = 0;
+        const lp = ctx.createBiquadFilter();
+        lp.type = 'lowpass';
+        lp.frequency.value = 1600;
+        lp.connect(master);
+        master.connect(ctx.destination);
+        const bus = ctx.createGain();
+        bus.gain.value = 1;
+        bus.connect(lp);
+        // gentle echo for space
+        const delay = ctx.createDelay(2);
+        delay.delayTime.value = 0.58;
+        const fb = ctx.createGain();
+        fb.gain.value = 0.32;
+        const wet = ctx.createGain();
+        wet.gain.value = 0.38;
+        bus.connect(delay);
+        delay.connect(fb);
+        fb.connect(delay);
+        delay.connect(wet);
+        wet.connect(lp);
+        // low drone: root + fifth
+        for (const [f, g0] of [[73.42, 0.045], [110.0, 0.028]]) {
+          const o = ctx.createOscillator();
+          o.type = 'sine';
+          o.frequency.value = f;
+          const og = ctx.createGain();
+          og.gain.value = g0;
+          o.connect(og);
+          og.connect(lp);
+          o.start();
+        }
+        music.ctx = ctx; music.master = master; music.bus = bus;
+      }
+      music.ctx.resume();
+      music.master.gain.cancelScheduledValues(music.ctx.currentTime);
+      music.master.gain.linearRampToValueAtTime(0.9, music.ctx.currentTime + 1.5);
+      // D-major pentatonic across two octaves — never dissonant
+      const POOL_NOTES = [293.66, 329.63, 369.99, 440.0, 493.88, 587.33, 659.26, 739.99];
+      const note = () => {
+        if (!music.on) return;
+        const ctx = music.ctx;
+        const n = 1 + (Math.random() < 0.3 ? 1 : 0); // occasionally a dyad
+        for (let i = 0; i < n; i++) {
+          const o = ctx.createOscillator();
+          o.type = Math.random() < 0.7 ? 'sine' : 'triangle';
+          o.frequency.value = POOL_NOTES[Math.floor(Math.random() * POOL_NOTES.length)];
+          const g = ctx.createGain();
+          const pan = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+          const peak = 0.04 + Math.random() * 0.05;
+          const t0 = ctx.currentTime + i * 0.25;
+          g.gain.setValueAtTime(0, t0);
+          g.gain.linearRampToValueAtTime(peak, t0 + 1.2 + Math.random() * 1.3);
+          g.gain.exponentialRampToValueAtTime(0.0004, t0 + 5 + Math.random() * 3);
+          o.connect(g);
+          if (pan) { pan.pan.value = Math.random() * 1.4 - 0.7; g.connect(pan); pan.connect(music.bus); }
+          else g.connect(music.bus);
+          o.start(t0);
+          o.stop(t0 + 9);
+        }
+        music.timer = setTimeout(note, 1400 + Math.random() * 2600);
+      };
+      music.on = true;
+      note();
+    } catch (err) { /* audio unavailable — leave the scene silent */ }
+  }
+  function stopMusic() {
+    music.on = false;
+    if (music.timer) clearTimeout(music.timer);
+    if (music.ctx && music.master) {
+      music.master.gain.cancelScheduledValues(music.ctx.currentTime);
+      music.master.gain.linearRampToValueAtTime(0, music.ctx.currentTime + 0.8);
+      setTimeout(() => { if (!music.on && music.ctx) music.ctx.suspend(); }, 1000);
+    }
+  }
+
   // ---------- interaction ----------
   const chips = {
     roof: document.getElementById('chip-roof'),
     xray: document.getElementById('chip-xray'),
     top: document.getElementById('chip-top'),
-    systems: document.getElementById('chip-systems')
+    systems: document.getElementById('chip-systems'),
+    sound: document.getElementById('chip-sound')
   };
-  const state = { roof: true, xray: false, top: false, systems: false };
+  const state = { roof: true, xray: false, top: false, systems: false, sound: false };
   const savedView = { azimuth: view.azimuth, elevation: view.elevation, size: view.size, target: view.target.clone() };
 
   function refreshChips() {
@@ -1061,6 +1203,8 @@
     chips.xray.classList.toggle('active', state.xray);
     chips.top.classList.toggle('active', state.top);
     chips.systems.classList.toggle('active', state.systems);
+    chips.sound.textContent = state.sound ? 'Sound on' : 'Sound';
+    chips.sound.classList.toggle('active', state.sound);
   }
   chips.roof.addEventListener('click', () => {
     state.roof = !state.roof;
@@ -1083,8 +1227,8 @@
       savedView.azimuth = viewGoal.azimuth; savedView.elevation = viewGoal.elevation;
       savedView.size = viewGoal.size; savedView.target.copy(viewGoal.target);
       viewGoal.elevation = 1.54;
-      viewGoal.azimuth = 0; // long axis horizontal on screen
-      viewGoal.size = 23;
+      viewGoal.azimuth = -Math.PI / 2; // plan rotated 90° CCW: long axis vertical
+      viewGoal.size = 32;
       viewGoal.target.set(0, 0, 1.5);
     } else {
       viewGoal.azimuth = savedView.azimuth;
@@ -1097,6 +1241,11 @@
   chips.systems.addEventListener('click', () => {
     state.systems = !state.systems;
     labels.visible = state.systems;
+    refreshChips();
+  });
+  chips.sound.addEventListener('click', () => {
+    state.sound = !state.sound;
+    if (state.sound) startMusic(); else stopMusic();
     refreshChips();
   });
   refreshChips();
@@ -1210,6 +1359,32 @@
           m.z + Math.cos(t * 0.7 + m.phase) * m.amp * 0.7);
       }
       pos.needsUpdate = true;
+    }
+    if (!reduceMotion) {
+      for (const b of butterflies) {
+        const x = b.ax + Math.cos(t * b.wx + b.px) * b.rx;
+        const z = b.az + Math.sin(t * b.wz + b.pz) * b.rz;
+        const y = groundHeight(x, z) + 1.0 + 0.45 * Math.sin(t * b.wy + b.py);
+        b.g.position.set(x, y, z);
+        const vx = -Math.sin(t * b.wx + b.px) * b.wx * b.rx;
+        const vz = Math.cos(t * b.wz + b.pz) * b.wz * b.rz;
+        b.g.rotation.y = Math.atan2(vx, vz);
+        const flap = 0.15 + 0.85 * Math.abs(Math.sin(t * b.flap + b.fp));
+        b.wr.rotation.z = flap;
+        b.wl.rotation.z = -flap;
+      }
+      for (const b of birds) {
+        const ang = t * b.w + b.ph;
+        const x = b.cx + Math.cos(ang) * b.r;
+        const z = b.cz + Math.sin(ang) * b.r;
+        b.g.position.set(x, b.h + Math.sin(t * 0.4 + b.ph) * 0.9, z);
+        const dir = Math.sign(b.w);
+        b.g.rotation.y = Math.atan2(-Math.sin(ang) * dir, Math.cos(ang) * dir);
+        b.g.rotation.z = 0.16 * dir; // gentle bank into the circle
+        const flap = 0.24 + 0.16 * Math.sin(t * 2.1 + b.fp);
+        b.wr.rotation.z = flap;
+        b.wl.rotation.z = -flap;
+      }
     }
     renderer.render(scene, camera);
     requestAnimationFrame(tick);
