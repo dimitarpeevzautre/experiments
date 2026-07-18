@@ -459,33 +459,97 @@
   solarGroup.add(solarArray(1), solarArray(-1));
   roofGroup.add(solarGroup);
 
-  // interior, visible through the glazing / x-ray
+  // interior, visible through the glazing / x-ray:
+  // front room by the glazed gable; bathroom + bedroom along the back wall;
+  // kids' mezzanine above them, open to the front room
   {
     const inter = new THREE.Group();
     cabin.add(inter);
     const y0 = 0.43;
-    // bed
-    inter.add(mesh(new THREE.BoxGeometry(1.7, 0.35, 2.1), std(0xefe7d8, { roughness: 0.95 }), -1.7, y0 + 0.18, -2.4));
-    inter.add(mesh(new THREE.BoxGeometry(1.7, 0.7, 0.12), std(C.timberDark), -1.7, y0 + 0.35, -3.5));
-    inter.add(mesh(new THREE.BoxGeometry(1.5, 0.12, 0.8), std(0xd9c9a8), -1.7, y0 + 0.42, -3.0));
-    // kitchenette along back wall
-    inter.add(mesh(new THREE.BoxGeometry(2.4, 0.9, 0.6), std(0x8a5a33, { roughness: 0.8 }), 1.5, y0 + 0.45, -3.55));
-    inter.add(mesh(new THREE.BoxGeometry(2.5, 0.05, 0.66), std(0xd8d2c4, { roughness: 0.5 }), 1.5, y0 + 0.93, -3.55));
-    // small table + two chairs
-    inter.add(mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.05, 18), std(0x9a6b40), 1.4, y0 + 0.72, 1.2));
-    inter.add(mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.72, 8), std(C.frame), 1.4, y0 + 0.36, 1.2));
-    for (const a of [0.9, 2.1]) {
-      inter.add(mesh(new THREE.BoxGeometry(0.42, 0.45, 0.42), std(C.timberDark), a, y0 + 0.22, 1.9));
+    const MEZZ_Y = 2.28;              // underside of the mezzanine floor
+    const plaster = () => { const m = std(0xe4dbc8, { roughness: 0.95 }); wallMats.push(m); return m; };
+
+    // partition across the cabin at z = -1, with bathroom + bedroom doors
+    for (const [x0, x1] of [[-3, -2.25], [-1.55, 0.2], [1.0, 3]]) {
+      inter.add(mesh(new THREE.BoxGeometry(x1 - x0, MEZZ_Y, 0.1), plaster(), (x0 + x1) / 2, y0 + MEZZ_Y / 2, -1));
     }
-    // rug
-    const rug = mesh(new THREE.CircleGeometry(1.15, 24), std(0xc4a98a, { roughness: 1 }), -0.4, y0 + 0.005, 0.6);
+    for (const [dx, dw] of [[-1.9, 0.7], [0.6, 0.8]]) { // door leaves, ajar
+      const door = mesh(new THREE.BoxGeometry(dw, 2.05, 0.05), std(C.timberDark, { roughness: 0.7 }), dx, y0 + 1.03, -0.98);
+      door.rotation.y = 0.5;
+      inter.add(door);
+    }
+    // divider between bathroom (left, 2.1 m) and bedroom (right, 3.9 m)
+    inter.add(mesh(new THREE.BoxGeometry(0.1, MEZZ_Y, 3), plaster(), -0.9, y0 + MEZZ_Y / 2, -2.5));
+
+    // bathroom: shower tray, toilet, basin
+    const white = std(0xf2efe6, { roughness: 0.4 });
+    const tile = mesh(new THREE.BoxGeometry(2.0, 0.03, 2.9), std(0xcfd2cc, { roughness: 0.6 }), -1.97, y0 + 0.015, -2.5);
+    tile.castShadow = false;
+    inter.add(tile);
+    inter.add(mesh(new THREE.BoxGeometry(0.9, 0.14, 0.9), white, -2.5, y0 + 0.07, -3.5));
+    inter.add(mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.0, 6), std(C.metal, { metalness: 0.5 }), -2.9, y0 + 1.0, -3.85));
+    inter.add(mesh(new THREE.BoxGeometry(0.4, 0.42, 0.55), white, -1.35, y0 + 0.21, -3.6)); // wc
+    inter.add(mesh(new THREE.CylinderGeometry(0.24, 0.2, 0.12, 12), white, -1.35, y0 + 0.48, -3.55));
+    inter.add(mesh(new THREE.BoxGeometry(0.5, 0.8, 0.4), std(0x9a6b40, { roughness: 0.8 }), -2.55, y0 + 0.4, -1.45)); // vanity
+    inter.add(mesh(new THREE.CylinderGeometry(0.17, 0.14, 0.1, 12), white, -2.55, y0 + 0.85, -1.45));
+
+    // bedroom: double bed against the back wall, nightstands
+    inter.add(mesh(new THREE.BoxGeometry(1.6, 0.35, 2.0), std(0xefe7d8, { roughness: 0.95 }), 1.05, y0 + 0.18, -2.85));
+    inter.add(mesh(new THREE.BoxGeometry(1.4, 0.1, 0.9), std(0xd9c9a8), 1.05, y0 + 0.4, -3.35)); // duvet fold
+    inter.add(mesh(new THREE.BoxGeometry(1.6, 0.65, 0.1), std(C.timberDark), 1.05, y0 + 0.33, -3.87));
+    for (const nx of [0.1, 2.0]) {
+      inter.add(mesh(new THREE.BoxGeometry(0.36, 0.4, 0.36), std(0x8a5a33), nx, y0 + 0.2, -3.6));
+    }
+
+    // front room: kitchenette on the west wall, dining table, sofa facing the glazing
+    inter.add(mesh(new THREE.BoxGeometry(0.6, 0.9, 2.4), std(0x8a5a33, { roughness: 0.8 }), -2.6, y0 + 0.45, 1.4));
+    inter.add(mesh(new THREE.BoxGeometry(0.66, 0.05, 2.5), std(0xd8d2c4, { roughness: 0.5 }), -2.6, y0 + 0.93, 1.4));
+    inter.add(mesh(new THREE.BoxGeometry(0.4, 0.02, 0.5), std(0x9aa0a8, { metalness: 0.5, roughness: 0.3 }), -2.6, y0 + 0.955, 0.9)); // sink
+    inter.add(mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.05, 18), std(0x9a6b40), 1.3, y0 + 0.72, 1.5));
+    inter.add(mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.72, 8), std(C.frame), 1.3, y0 + 0.36, 1.5));
+    for (const a of [0.8, 1.9]) {
+      inter.add(mesh(new THREE.BoxGeometry(0.42, 0.45, 0.42), std(C.timberDark), a, y0 + 0.22, 2.2));
+    }
+    inter.add(mesh(new THREE.BoxGeometry(1.8, 0.4, 0.75), std(0xc9b8a0, { roughness: 1 }), -0.7, y0 + 0.2, 2.9)); // sofa seat
+    inter.add(mesh(new THREE.BoxGeometry(1.8, 0.5, 0.18), std(0xc9b8a0, { roughness: 1 }), -0.7, y0 + 0.6, 2.6)); // sofa back
+    const rug = mesh(new THREE.CircleGeometry(1.0, 24), std(0xc4a98a, { roughness: 1 }), 0, y0 + 0.005, 1.4);
     rug.rotation.x = -Math.PI / 2; rug.castShadow = false;
     inter.add(rug);
-    // warm interior glow
+
+    // mezzanine over the back zone: floor, front railing, ladder, kids' beds
+    const mezzFloorMat = std(0x9a6b40, { roughness: 0.85 });
+    wallMats.push(mezzFloorMat);
+    inter.add(mesh(new THREE.BoxGeometry(6, 0.12, 3.05), mezzFloorMat, 0, y0 + MEZZ_Y + 0.06, -2.48));
+    const railMat = std(C.frame, { roughness: 0.7 });
+    inter.add(mesh(new THREE.BoxGeometry(6, 0.06, 0.06), railMat, 0, y0 + MEZZ_Y + 0.95, -0.98));
+    for (let i = 0; i <= 8; i++) {
+      inter.add(mesh(new THREE.BoxGeometry(0.04, 0.85, 0.04), railMat, -2.9 + i * 0.725, y0 + MEZZ_Y + 0.52, -0.98));
+    }
+    // ladder up from the front room
+    const ladder = new THREE.Group();
+    ladder.position.set(2.55, y0, -0.9);
+    ladder.rotation.x = -0.22;
+    for (const s of [-1, 1]) {
+      ladder.add(mesh(new THREE.BoxGeometry(0.05, 2.55, 0.05), railMat, s * 0.22, 1.27, 0));
+    }
+    for (let i = 1; i <= 6; i++) {
+      ladder.add(mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.44, 6), railMat, 0, i * 0.37, 0).rotateZ(Math.PI / 2));
+    }
+    inter.add(ladder);
+    // kids' beds on the mezzanine
+    for (const [bx, pc] of [[-1.7, C.blossomB], [0.5, 0x8fb7c9]]) {
+      inter.add(mesh(new THREE.BoxGeometry(0.8, 0.16, 1.6), std(0xefe7d8, { roughness: 0.95 }), bx, y0 + MEZZ_Y + 0.2, -2.9));
+      inter.add(mesh(new THREE.BoxGeometry(0.55, 0.08, 0.35), std(pc, { roughness: 1 }), bx, y0 + MEZZ_Y + 0.31, -3.45));
+    }
+
+    // warm interior glow, one per level
     const bulb = new THREE.PointLight(0xffc98a, 6, 9, 2);
-    bulb.position.set(0, y0 + 2.3, -0.5);
+    bulb.position.set(0, y0 + 2.4, 1.2);
     inter.add(bulb);
-    inter.add(mesh(new THREE.SphereGeometry(0.09, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffe6b8 }), 0, y0 + 2.3, -0.5));
+    inter.add(mesh(new THREE.SphereGeometry(0.09, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffe6b8 }), 0, y0 + 2.4, 1.2));
+    const bulb2 = new THREE.PointLight(0xffc98a, 2.5, 5, 2);
+    bulb2.position.set(0, y0 + MEZZ_Y + 1.1, -2.4);
+    inter.add(bulb2);
   }
 
   // battery on the east side wall
@@ -1071,7 +1135,8 @@
     view.elevation += (viewGoal.elevation - view.elevation) * k;
     view.size += (viewGoal.size - view.size) * k;
     applyCamera();
-    if (compass) compass.style.transform = `rotate(${(-view.azimuth - Math.PI / 4) * 180 / Math.PI}deg)`;
+    // world north (−z) projected to screen: clockwise angle from screen-up equals the azimuth
+    if (compass) compass.style.transform = `rotate(${view.azimuth * 180 / Math.PI}deg)`;
 
     if (petals) {
       const pos = petals.points.geometry.attributes.position;

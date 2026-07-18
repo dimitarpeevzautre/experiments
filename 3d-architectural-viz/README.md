@@ -10,6 +10,10 @@ Off-grid systems are modelled to scale and labelled: solar array + wall-mounted
 battery, rain cistern (fed by a roof downpipe), borehole well, and septic tank
 with leach field.
 
+The cabin interior is furnished: a front room behind the glazed gable
+(kitchenette, dining, sofa), a small bathroom and bedroom along the back wall,
+and a kids' mezzanine above them reached by ladder.
+
 ## Viewing
 
 Open `index.html` in any browser — it is fully self-contained (Three.js r160

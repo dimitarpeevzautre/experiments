@@ -75,7 +75,7 @@
     font-size: 0.68rem; letter-spacing: 0.3em; text-transform: uppercase;
     text-shadow: 0 1px 6px rgba(80, 50, 25, 0.55);
   }
-  #compass { display: inline-block; font-size: 1.05rem; transition: none; }
+  #compass { display: block; transform-origin: 50% 50%; filter: drop-shadow(0 1px 3px rgba(80, 50, 25, 0.5)); }
   nav button {
     font: inherit;
     font-size: 0.74rem;
@@ -114,7 +114,14 @@
 <div id="legend"><strong>Golden hour study</strong> &nbsp;—&nbsp; drag to orbit · scroll to zoom</div>
 
 <nav aria-label="View controls">
-  <div id="compass-wrap"><span id="compass">◆</span> N</div>
+  <div id="compass-wrap">
+    <svg id="compass" width="22" height="22" viewBox="-11 -11 22 22" aria-hidden="true">
+      <circle r="10" fill="none" stroke="rgba(253,246,233,0.4)" stroke-width="1"/>
+      <path d="M0,-8.5 L2.4,1 L0,-1 L-2.4,1 Z" fill="#fdf6e9"/>
+      <path d="M0,8.5 L2.4,-1 L0,1 L-2.4,-1 Z" fill="rgba(253,246,233,0.35)"/>
+    </svg>
+    N
+  </div>
   <button id="chip-roof" type="button">Roof on</button>
   <button id="chip-xray" type="button">X-ray walls</button>
   <button id="chip-systems" type="button">Systems</button>
