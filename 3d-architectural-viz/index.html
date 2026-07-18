@@ -583,7 +583,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   const solarGroup = new THREE.Group();
   function solarArray(sign) {
     const g = new THREE.Group();
-    const cols = 4, rows = 2, pw = 1.05, ph = 1.75, gap = 0.09;
+    const cols = 7, rows = 2, pw = 1.05, ph = 1.75, gap = 0.09;
     for (let cix = 0; cix < cols; cix++) {
       for (let riy = 0; riy < rows; riy++) {
         const panel = new THREE.Group();
@@ -646,18 +646,27 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       inter.add(mesh(new THREE.BoxGeometry(0.36, 0.4, 0.36), std(0x8a5a33), nx, y0 + 0.2, -3.6));
     }
 
-    // front room: kitchenette on the west wall, dining table, sofa facing the glazing
+    // front room: clear entry axis from the door (x = 0) to the bedroom door.
+    // Kitchenette + dining on the west side, lounge along the east wall.
     inter.add(mesh(new THREE.BoxGeometry(0.6, 0.9, 2.4), std(0x8a5a33, { roughness: 0.8 }), -2.6, y0 + 0.45, 1.4));
     inter.add(mesh(new THREE.BoxGeometry(0.66, 0.05, 2.5), std(0xd8d2c4, { roughness: 0.5 }), -2.6, y0 + 0.93, 1.4));
     inter.add(mesh(new THREE.BoxGeometry(0.4, 0.02, 0.5), std(0x9aa0a8, { metalness: 0.5, roughness: 0.3 }), -2.6, y0 + 0.955, 0.9)); // sink
-    inter.add(mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.05, 18), std(0x9a6b40), 1.3, y0 + 0.72, 1.5));
-    inter.add(mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.72, 8), std(C.frame), 1.3, y0 + 0.36, 1.5));
-    for (const a of [0.8, 1.9]) {
-      inter.add(mesh(new THREE.BoxGeometry(0.42, 0.45, 0.42), std(C.timberDark), a, y0 + 0.22, 2.2));
+    inter.add(mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.05, 18), std(0x9a6b40), -1.4, y0 + 0.72, 2.5));
+    inter.add(mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.72, 8), std(C.frame), -1.4, y0 + 0.36, 2.5));
+    for (const [cxp, czp] of [[-0.85, 1.9], [-1.95, 3.1]]) {
+      inter.add(mesh(new THREE.BoxGeometry(0.42, 0.45, 0.42), std(C.timberDark), cxp, y0 + 0.22, czp));
     }
-    inter.add(mesh(new THREE.BoxGeometry(1.8, 0.4, 0.75), std(0xc9b8a0, { roughness: 1 }), -0.7, y0 + 0.2, 2.9)); // sofa seat
-    inter.add(mesh(new THREE.BoxGeometry(1.8, 0.5, 0.18), std(0xc9b8a0, { roughness: 1 }), -0.7, y0 + 0.6, 2.6)); // sofa back
-    const rug = mesh(new THREE.CircleGeometry(1.0, 24), std(0xc4a98a, { roughness: 1 }), 0, y0 + 0.005, 1.4);
+    // sofa against the east wall, facing the room
+    inter.add(mesh(new THREE.BoxGeometry(0.75, 0.4, 1.8), std(0xc9b8a0, { roughness: 1 }), 2.28, y0 + 0.2, 1.3)); // seat
+    inter.add(mesh(new THREE.BoxGeometry(0.18, 0.5, 1.8), std(0xc9b8a0, { roughness: 1 }), 2.6, y0 + 0.6, 1.3)); // back
+    inter.add(mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.05, 16), std(0x9a6b40), 1.3, y0 + 0.42, 1.3)); // coffee table
+    inter.add(mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.4, 8), std(C.frame), 1.3, y0 + 0.2, 1.3));
+    // floor lamp by the sofa, plant by the glazing
+    inter.add(mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.4, 6), std(C.metal), 2.3, y0 + 0.7, 2.7));
+    inter.add(mesh(new THREE.CylinderGeometry(0.14, 0.18, 0.22, 10), std(0xe8ddc8, { roughness: 1 }), 2.3, y0 + 1.45, 2.7));
+    inter.add(mesh(new THREE.CylinderGeometry(0.16, 0.13, 0.3, 10), std(0x9c7a5c), -2.4, y0 + 0.15, 3.3));
+    inter.add(mesh(blobGeometry(0.28, 1, 0.4), std(C.leaf, { roughness: 1 }), -2.4, y0 + 0.55, 3.3));
+    const rug = mesh(new THREE.CircleGeometry(0.95, 24), std(0xc4a98a, { roughness: 1 }), 1.5, y0 + 0.005, 1.3);
     rug.rotation.x = -Math.PI / 2; rug.castShadow = false;
     inter.add(rug);
 
@@ -1131,7 +1140,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     line.renderOrder = 9;
     labels.add(line);
   }
-  makeLabel('Solar array 3.4 kWp', anchors.solar, new THREE.Vector3(-6, 2.2, 2));
+  makeLabel('Solar array 11 kWp', anchors.solar, new THREE.Vector3(-6, 2.2, 2));
   makeLabel('Battery 10 kWh', anchors.battery, new THREE.Vector3(5, 0.3, 6));
   makeLabel('Rain cistern 10 m³', anchors.cistern, new THREE.Vector3(-2, 1.6, -1));
   makeLabel('Borehole well', anchors.well, new THREE.Vector3(-3, 1.6, 1));
