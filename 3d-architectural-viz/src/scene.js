@@ -1135,8 +1135,9 @@
     view.elevation += (viewGoal.elevation - view.elevation) * k;
     view.size += (viewGoal.size - view.size) * k;
     applyCamera();
-    // world north (−z) projected to screen: clockwise angle from screen-up equals the azimuth
-    if (compass) compass.style.transform = `rotate(${view.azimuth * 180 / Math.PI}deg)`;
+    // site north lies 135° clockwise of −z (along the +x/+z diagonal);
+    // projected to screen, the needle's clockwise angle from screen-up is azimuth + 135°
+    if (compass) compass.style.transform = `rotate(${view.azimuth * 180 / Math.PI + 135}deg)`;
 
     if (petals) {
       const pos = petals.points.geometry.attributes.position;
