@@ -200,10 +200,10 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -200, 400);
   const view = {
-    size: 23.5,          // half-height of the ortho frustum, metres
+    size: 24.5,          // half-height of the ortho frustum, metres
     azimuth: -Math.PI / 4,
     elevation: 0.56,     // radians
-    target: new THREE.Vector3(0, 0, 1.5)
+    target: new THREE.Vector3(0, 1.6, 1.5)
   };
   const viewGoal = {
     size: view.size, azimuth: view.azimuth, elevation: view.elevation,
@@ -271,10 +271,13 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   const POOL_POS = new THREE.Vector2(3.5, 1.5);
   const PATIO_POS = new THREE.Vector2(10.5, 7.0);
 
+  // corner heights: cabin corner (+30,+20) is highest at +4 m, the two adjacent
+  // corners sit 2 m lower, and the far corner (−30,−20) is lowest at 0 —
+  // a constant bilinear fall of 4 m along the diagonal
   function baseHeight(x, z) {
-    const sx = smoothstep(0, 1, (x + HALF_X) / PLOT_X);
-    const sz = smoothstep(0, 1, (HALF_Z - z) / PLOT_Z);
-    let h = 1.05 * sx + 0.85 * sz;
+    const sx = (x + HALF_X) / PLOT_X;
+    const sz = (z + HALF_Z) / PLOT_Z;
+    let h = 2.0 * sx + 2.0 * sz;
     h += 0.14 * Math.sin(x * 0.23 + 1.7) * Math.cos(z * 0.31 + 0.4);
     h += 0.07 * Math.sin(x * 0.61 - z * 0.43);
     return h;
