@@ -29,8 +29,11 @@ Controls:
 - **Top view** — plan view of the whole site
 - **Sound** — calm generative ambient loop (WebAudio, no assets)
 
-Drifting petals, butterflies and circling birds animate the scene; all motion
-respects `prefers-reduced-motion`.
+Drifting petals, butterflies and circling birds animate the scene, and three
+Portuguese water dogs — two in lion cut (a bigger black and a smaller brown)
+and a young brown one still in full coat — play across the lawn, leap into the
+pool for a swim, shake off, and bark now and then (audible when Sound is on).
+All motion respects `prefers-reduced-motion`.
 
 ## Structure
 

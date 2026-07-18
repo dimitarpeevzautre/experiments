@@ -1249,6 +1249,171 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     }
   }
 
+  // ---------- three Portuguese water dogs ----------
+  const dogs = [], splashes = [];
+  const WATER_Y = PAD_H - 0.14;
+  {
+    const fluffGeo = blobGeometry(0.3, 1, 0.3);
+    function makeDog(size, color, style) { // style: 'lion' | 'full'
+      const mat = new THREE.MeshStandardMaterial({ color, roughness: 1 });
+      const g = new THREE.Group();
+      const body = new THREE.Group();
+      g.add(body);
+      const chest = new THREE.Mesh(fluffGeo, mat); // fluffy front half / mane
+      chest.scale.set(0.95, 0.9, style === 'full' ? 1.15 : 0.95);
+      chest.position.set(0, 0.5, 0.12);
+      let rear;
+      if (style === 'lion') { // clipped hindquarters
+        rear = new THREE.Mesh(new THREE.CapsuleGeometry(0.13, 0.22, 4, 8), mat);
+        rear.rotation.x = Math.PI / 2;
+        rear.position.set(0, 0.47, -0.28);
+      } else {
+        rear = new THREE.Mesh(fluffGeo, mat);
+        rear.scale.set(0.85, 0.8, 1.0);
+        rear.position.set(0, 0.48, -0.3);
+      }
+      const headG = new THREE.Group();
+      headG.position.set(0, 0.8, 0.42);
+      const head = new THREE.Mesh(fluffGeo, mat);
+      head.scale.setScalar(style === 'lion' ? 0.62 : 0.55);
+      const muzzle = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.09, 0.18), mat);
+      muzzle.position.set(0, -0.05, 0.2);
+      const nose = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 6), std(0x141210));
+      nose.position.set(0, -0.03, 0.3);
+      headG.add(head, muzzle, nose);
+      for (const s of [-1, 1]) { // floppy ears
+        const ear = new THREE.Mesh(fluffGeo, mat);
+        ear.scale.set(0.16, 0.3, 0.12);
+        ear.position.set(s * 0.18, -0.04, 0.03);
+        headG.add(ear);
+      }
+      const legs = [];
+      const legGeo = new THREE.CylinderGeometry(0.035, 0.03, 0.34, 6);
+      for (const [lx, lz, front] of [[-0.11, 0.24, 1], [0.11, 0.24, 1], [-0.11, -0.3, 0], [0.11, -0.3, 0]]) {
+        const leg = new THREE.Mesh(legGeo, mat);
+        leg.position.set(lx, 0.17, lz);
+        legs.push(leg);
+        body.add(leg);
+        if (style === 'full' || (style === 'lion' && front)) { // fluffy cuffs
+          const cuff = new THREE.Mesh(fluffGeo, mat);
+          cuff.scale.setScalar(0.18);
+          cuff.position.set(lx, 0.3, lz);
+          body.add(cuff);
+        }
+      }
+      const tailG = new THREE.Group();
+      tailG.position.set(0, 0.6, -0.42);
+      if (style === 'lion') { // bare tail with the classic tip puff
+        const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.026, 0.32, 5), mat);
+        stem.rotation.x = 0.9;
+        stem.position.set(0, 0.1, -0.1);
+        const puff = new THREE.Mesh(fluffGeo, mat);
+        puff.scale.setScalar(0.22);
+        puff.position.set(0, 0.25, -0.2);
+        tailG.add(stem, puff);
+      } else {
+        const tail = new THREE.Mesh(fluffGeo, mat);
+        tail.scale.set(0.18, 0.2, 0.42);
+        tail.rotation.x = -0.7;
+        tail.position.set(0, 0.14, -0.12);
+        tailG.add(tail);
+      }
+      body.add(chest, rear, headG, tailG);
+      body.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+      g.scale.setScalar(size);
+      scene.add(g);
+      return { g, body, headG, tailG, legs };
+    }
+    const specs = [
+      { size: 1.0, color: 0x211d1a, style: 'lion', bark: 300, x: 7, z: 9 },    // big black, lion cut
+      { size: 0.8, color: 0x5a4530, style: 'lion', bark: 480, x: 5.5, z: 10.5 }, // smaller brown, lion cut
+      { size: 1.05, color: 0x46331f, style: 'full', bark: 390, x: 8.5, z: 11 }  // young brown, full coat
+    ];
+    for (let i = 0; i < specs.length; i++) {
+      const s = specs[i];
+      const d = Object.assign(makeDog(s.size, s.color, s.style), {
+        i, size: s.size, barkF: s.bark,
+        x: s.x, z: s.z, heading: rr(0, 6.28), state: 'play',
+        tx: s.x, tz: s.z, speed: rr(1.8, 2.4),
+        poolAt: 12 + i * rr(14, 22), barkAt: rr(4, 12), barkAnim: -9,
+        gait: rr(0, 6.28), jump: null, swimUntil: 0, shakeT0: 0
+      });
+      d.g.position.set(d.x, groundHeight(d.x, d.z), d.z);
+      dogs.push(d);
+      if (reduceMotion) d.g.rotation.y = rr(0, 6.28);
+    }
+  }
+  const pack = { x: 4, z: 7, next: 0 };
+  function validPlaySpot(x, z) {
+    if (x < -15 || x > 10 || z < -10 || z > 12) return false;
+    if (poolField(x, z) < 1.2) return false;
+    if (Math.hypot(x - PATIO_POS.x, z - PATIO_POS.y) < 5) return false;
+    return true;
+  }
+  function splash(x, z, big, t) {
+    const n = big ? 3 : 1;
+    for (let i = 0; i < n; i++) {
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(0.26, 0.36, 20),
+        new THREE.MeshBasicMaterial({ color: 0xeafcfd, transparent: true, opacity: 0.85, side: THREE.DoubleSide, depthWrite: false })
+      );
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.set(x, WATER_Y + 0.03 + i * 0.002, z);
+      scene.add(ring);
+      splashes.push({ m: ring, t0: t + i * 0.16, life: 0.9 });
+    }
+    if (big) {
+      for (let i = 0; i < 8; i++) {
+        const a = rr(0, 6.28);
+        const drop = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 5),
+          new THREE.MeshBasicMaterial({ color: 0xdcf5f6, transparent: true, opacity: 0.9 }));
+        drop.position.set(x, WATER_Y + 0.1, z);
+        scene.add(drop);
+        splashes.push({ m: drop, t0: t, life: 1.2, vx: Math.cos(a) * rr(0.8, 2), vy: rr(2, 3.6), vz: Math.sin(a) * rr(0.8, 2) });
+      }
+    }
+  }
+  function moveToward(d, dt, speed) {
+    const dx = d.tx - d.x, dz = d.tz - d.z;
+    d.moving = Math.hypot(dx, dz) > 0.35 ? 1 : 0;
+    if (!d.moving) return;
+    let diff = Math.atan2(dx, dz) - d.heading;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    d.heading += clamp(diff, -3 * dt, 3 * dt);
+    d.x += Math.sin(d.heading) * speed * dt;
+    d.z += Math.cos(d.heading) * speed * dt;
+    d.g.position.x = d.x;
+    d.g.position.z = d.z;
+    d.g.rotation.y = d.heading;
+  }
+  function bark(d) {
+    if (!music.ctx || !state.sound || music.ctx.state !== 'running') return;
+    const ctx = music.ctx;
+    const t0 = ctx.currentTime;
+    const n = Math.random() < 0.4 ? 2 : 1;
+    for (let i = 0; i < n; i++) {
+      const f0 = d.barkF * (0.9 + Math.random() * 0.2);
+      const o = ctx.createOscillator();
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(f0 * 1.7, t0 + i * 0.21);
+      o.frequency.exponentialRampToValueAtTime(f0 * 0.6, t0 + i * 0.21 + 0.09);
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.value = f0 * 1.5;
+      bp.Q.value = 1.1;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t0 + i * 0.21);
+      g.gain.exponentialRampToValueAtTime(0.07, t0 + i * 0.21 + 0.015);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + i * 0.21 + 0.17);
+      o.connect(bp);
+      bp.connect(g);
+      g.connect(music.master); // past the lowpass, so barks stay crisp
+      o.start(t0 + i * 0.21);
+      o.stop(t0 + i * 0.21 + 0.22);
+    }
+  }
+
   // ---------- generative ambient loop (WebAudio, started by the Sound chip) ----------
   const music = { ctx: null, master: null, timer: null, on: false };
   function startMusic() {
@@ -1530,6 +1695,142 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         const flap = 0.24 + 0.16 * Math.sin(t * 2.1 + b.fp);
         b.wr.rotation.z = flap;
         b.wl.rotation.z = -flap;
+      }
+
+      // the pack picks a new spot on the lawn every few seconds
+      if (t > pack.next) {
+        for (let k = 0; k < 24; k++) {
+          const x = rr(-15, 10), z = rr(-10, 12);
+          if (validPlaySpot(x, z)) { pack.x = x; pack.z = z; break; }
+        }
+        pack.next = t + rr(5, 9);
+      }
+      for (const d of dogs) {
+        d.tailG.rotation.y = Math.sin(t * 9 + d.i * 2) * 0.35; // always wagging
+        if (t > d.barkAt && (d.state === 'play' || d.state === 'toPool')) {
+          d.barkAt = t + rr(7, 20);
+          d.barkAnim = t;
+          bark(d);
+        }
+        d.headG.rotation.x = (t - d.barkAnim < 0.4) ? -0.45 : Math.sin(t * 2 + d.i) * 0.06;
+
+        switch (d.state) {
+          case 'play': {
+            if (t > d.poolAt) {
+              const a = rr(0, 6.28);
+              const rb = poolBoundaryR(a);
+              d.entryA = a;
+              d.tx = POOL_POS.x + Math.cos(a) * rb * 1.35 * 1.18;
+              d.tz = POOL_POS.y + Math.sin(a) * rb * 1.18;
+              d.state = 'toPool';
+              break;
+            }
+            d.tx = pack.x + Math.cos(t * 0.35 + d.i * 2.1) * 2.0;
+            d.tz = pack.z + Math.sin(t * 0.3 + d.i * 2.1) * 2.0;
+            moveToward(d, dt, d.speed);
+            d.g.position.y = groundHeight(d.x, d.z) + Math.abs(Math.sin(t * 8 + d.gait)) * 0.05 * d.moving;
+            break;
+          }
+          case 'toPool': {
+            moveToward(d, dt, d.speed * 1.25);
+            d.g.position.y = groundHeight(d.x, d.z) + Math.abs(Math.sin(t * 9 + d.gait)) * 0.06;
+            if (!d.moving) {
+              const a = d.entryA;
+              const rb = poolBoundaryR(a) * 0.45;
+              d.jump = {
+                x0: d.x, z0: d.z, y0: groundHeight(d.x, d.z), t0: t,
+                x1: POOL_POS.x + Math.cos(a) * rb * 1.35, z1: POOL_POS.y + Math.sin(a) * rb
+              };
+              d.state = 'jump';
+            }
+            break;
+          }
+          case 'jump': {
+            const s = Math.min(1, (t - d.jump.t0) / 0.7);
+            d.x = lerp(d.jump.x0, d.jump.x1, s);
+            d.z = lerp(d.jump.z0, d.jump.z1, s);
+            d.g.position.set(d.x, lerp(d.jump.y0, WATER_Y - 0.28, s) + Math.sin(s * Math.PI) * 1.0, d.z);
+            d.g.rotation.y = Math.atan2(d.jump.x1 - d.jump.x0, d.jump.z1 - d.jump.z0);
+            if (s >= 1) {
+              splash(d.x, d.z, true, t);
+              const a2 = rr(0, 6.28), rb2 = poolBoundaryR(a2) * rr(0.2, 0.5);
+              d.tx = POOL_POS.x + Math.cos(a2) * rb2 * 1.35;
+              d.tz = POOL_POS.y + Math.sin(a2) * rb2;
+              d.swimUntil = t + rr(4, 7);
+              d.state = 'swim';
+              d.body.rotation.x = -0.12; // head up while paddling
+            }
+            break;
+          }
+          case 'swim': {
+            moveToward(d, dt, 0.55);
+            d.g.position.y = WATER_Y - 0.3 + Math.sin(t * 3.2 + d.i) * 0.03;
+            if (t > d.swimUntil) {
+              const aOut = Math.atan2(d.z - POOL_POS.y, (d.x - POOL_POS.x) / 1.35);
+              const rbo = poolBoundaryR(aOut);
+              d.tx = POOL_POS.x + Math.cos(aOut) * rbo * 1.35 * 1.15;
+              d.tz = POOL_POS.y + Math.sin(aOut) * rbo * 1.15;
+              d.state = 'exit';
+            } else if (rand() < dt * 0.7) {
+              splash(d.x, d.z, false, t);
+            }
+            break;
+          }
+          case 'exit': {
+            moveToward(d, dt, 0.9);
+            const mix = smoothstep(0.72, 1.05, poolField(d.x, d.z));
+            d.g.position.y = lerp(WATER_Y - 0.3, groundHeight(d.x, d.z), mix);
+            if (!d.moving) {
+              d.body.rotation.x = 0;
+              d.state = 'shake';
+              d.shakeT0 = t;
+              splash(d.x, d.z, false, t);
+            }
+            break;
+          }
+          case 'shake': {
+            const age = t - d.shakeT0;
+            d.g.position.y = groundHeight(d.x, d.z);
+            d.body.rotation.z = Math.sin(age * 38) * 0.28 * Math.max(0, 1 - age);
+            if (age > 1.1) {
+              d.body.rotation.z = 0;
+              d.state = 'play';
+              d.poolAt = t + rr(25, 55);
+            }
+            break;
+          }
+        }
+        const gaitAmp = d.state === 'swim' ? 0.25 : (d.state === 'jump' ? 0 : d.moving ? 0.55 : 0);
+        d.legs.forEach((leg, li) => {
+          leg.rotation.x = gaitAmp * Math.sin(t * 10 + d.gait + (li % 2) * Math.PI + (li < 2 ? 0 : Math.PI * 0.5));
+        });
+        if (d.state === 'jump') d.legs.forEach(leg => { leg.rotation.x = 0.7; }); // tucked
+      }
+
+      // splash rings and droplets
+      for (let i = splashes.length - 1; i >= 0; i--) {
+        const s = splashes[i];
+        const age = (t - s.t0) / s.life;
+        if (age < 0) continue;
+        const drown = s.vx !== undefined && s.m.position.y < WATER_Y - 0.02;
+        if (age >= 1 || drown) {
+          scene.remove(s.m);
+          s.m.geometry.dispose();
+          s.m.material.dispose();
+          splashes.splice(i, 1);
+          continue;
+        }
+        if (s.vx !== undefined) { // droplet with simple ballistics
+          s.m.position.x += s.vx * dt;
+          s.m.position.z += s.vz * dt;
+          s.vy -= 6.5 * dt;
+          s.m.position.y += s.vy * dt;
+          s.m.material.opacity = 0.9 * (1 - age);
+        } else { // expanding foam ring
+          const k = 1 + age * 2.8;
+          s.m.scale.set(k, k, 1);
+          s.m.material.opacity = 0.85 * (1 - age);
+        }
       }
     }
     renderer.render(scene, camera);
