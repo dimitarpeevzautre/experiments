@@ -7,9 +7,10 @@
     sound: document.getElementById('chip-sound'),
     cycle: document.getElementById('chip-cycle'),
     season: document.getElementById('chip-season'),
-    tour: document.getElementById('chip-tour')
+    tour: document.getElementById('chip-tour'),
+    walk: document.getElementById('chip-walk')
   };
-  const state = { roof: true, xray: false, top: false, systems: false, sound: false, cycle: false, tour: false };
+  const state = { roof: true, xray: false, top: false, systems: false, sound: false, cycle: false, tour: false, walk: false };
   const savedView = { azimuth: view.azimuth, elevation: view.elevation, size: view.size, target: view.target.clone() };
 
   function refreshChips() {
@@ -24,6 +25,7 @@
     chips.season.textContent = season[0].toUpperCase() + season.slice(1);
     chips.season.classList.toggle('active', season !== 'spring');
     chips.tour.classList.toggle('active', state.tour);
+    chips.walk.classList.toggle('active', state.walk);
   }
   chips.roof.addEventListener('click', () => {
     state.roof = !state.roof;
@@ -41,6 +43,7 @@
     refreshChips();
   });
   chips.top.addEventListener('click', () => {
+    if (walk.on) stopWalk();
     state.top = !state.top;
     if (state.top) {
       savedView.azimuth = viewGoal.azimuth; savedView.elevation = viewGoal.elevation;

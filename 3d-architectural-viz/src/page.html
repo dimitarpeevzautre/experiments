@@ -52,6 +52,38 @@
   }
   #tour-caption.show { opacity: 1; transform: translateX(-50%); }
   @media (prefers-reduced-motion: reduce) { #tour-caption { transition: none; } }
+
+  /* first-person walk controls */
+  #walk-ui {
+    position: fixed; left: 50%; bottom: clamp(16px, 4vh, 34px);
+    transform: translateX(-50%);
+    display: none; flex-direction: column; align-items: center; gap: 10px;
+    z-index: 12;
+  }
+  body.walking #walk-ui { display: flex; }
+  body.walking #legend { display: none; }
+  #walk-ui .walk-hint {
+    background: var(--plate);
+    border: 1px solid var(--plate-line);
+    border-radius: 3px;
+    padding: 7px 14px;
+    color: var(--ink-soft);
+    font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase;
+  }
+  #walk-forward {
+    font: inherit;
+    font-size: 0.78rem; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--chip-ink);
+    background: rgba(40, 30, 22, 0.55);
+    border: 1px solid rgba(244, 233, 214, 0.4);
+    border-radius: 4px;
+    padding: 14px 30px;
+    cursor: pointer;
+    touch-action: none;
+    user-select: none; -webkit-user-select: none;
+  }
+  #walk-forward:active { background: rgba(244, 233, 214, 0.85); color: #3c2c1e; }
+  @media (pointer: fine) { #walk-forward { display: none; } } /* touch only */
   #stage { z-index: 1; }
   #vignette { z-index: 2; }
   header, #legend, nav { z-index: 10; }
@@ -270,6 +302,11 @@
 <div id="legend"><strong>Golden hour study</strong> &nbsp;—&nbsp; drag to orbit · right-drag to pan · scroll to zoom · double-click resets</div>
 <div id="tour-caption" role="status"></div>
 
+<div id="walk-ui">
+  <span class="walk-hint">W A S D / arrows to move · drag to look · Esc or double-click to leave</span>
+  <button id="walk-forward" type="button" aria-label="Hold to walk forward">▲ hold to walk</button>
+</div>
+
 <nav aria-label="View controls">
   <div id="compass-wrap">
     <svg id="compass" width="22" height="22" viewBox="-11 -11 22 22" aria-hidden="true">
@@ -281,6 +318,7 @@
   </div>
   <button id="chip-project" type="button">Project</button>
   <button id="chip-tour" type="button">Tour</button>
+  <button id="chip-walk" type="button">Walk</button>
   <button id="chip-roof" type="button">Roof on</button>
   <button id="chip-xray" type="button">X-ray walls</button>
   <button id="chip-systems" type="button">Systems</button>

@@ -38,7 +38,11 @@
     applyCamera();
     // site north lies 135° clockwise of −z (along the +x/+z diagonal);
     // projected to screen, the needle's clockwise angle from screen-up is azimuth + 135°
-    if (compass) compass.style.transform = `rotate(${view.azimuth * 180 / Math.PI + 135}deg)`;
+    if (compass) {
+      compass.style.transform = walk.on
+        ? `rotate(${walk.yaw * 180 / Math.PI - 45}deg)`
+        : `rotate(${view.azimuth * 180 / Math.PI + 135}deg)`;
+    }
 
     if (petals && petals.points.visible) {
       const pos = petals.points.geometry.attributes.position;
@@ -207,7 +211,8 @@
       pool.userData.waterMat.normalMap.offset.set(t * 0.012, t * 0.017);
       if (pool.userData.foam) pool.userData.foam.material.opacity = 0.28 + 0.08 * Math.sin(t * 1.7);
     }
-    renderer.render(scene, camera);
+    updateWalk(dt, t);
+    renderer.render(scene, walk.on ? walkCam : camera);
     requestAnimationFrame(tick);
   }
   resize();

@@ -8,7 +8,9 @@ rendered isometrically in soft golden-hour light.
 
 Off-grid systems are modelled to scale and labelled: solar array + wall-mounted
 battery, rain cistern (fed by a roof downpipe), borehole well, septic tank and
-a backup generator.
+a backup generator. A firewood shed feeds the stove, a gravel parking pad sits
+inside the gate, and a kitchen garden of raised beds is drip-fed by gravity
+from the cistern.
 
 The cabin interior is furnished: a front room behind the glazed gable
 (kitchenette, dining, sofa), a small bathroom and bedroom along the back wall,
@@ -38,6 +40,9 @@ Controls:
   backup; nights show the cabin glowing warm under a moonlit sky
 - **Tour** — a guided cinematic pass with captions: gate, cabin, pond,
   systems, grove; any drag or scroll hands control back
+- **Walk** — first-person mode: WASD/arrows to move, drag to look (touch:
+  drag to look, hold the on-screen button to walk); step off the drive,
+  through the glass door and into the cabin; Esc or double-click leaves
 - **Season** — spring blossoms, summer greens, autumn ambers, or winter with
   snow, bare trees, a frozen pond, chimney smoke and the energy model switched
   to short days and biomass heating

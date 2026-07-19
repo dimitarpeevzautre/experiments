@@ -44,3 +44,4 @@
   makeLabel('Borehole well', anchors.well, new THREE.Vector3(-3, 1.6, 1));
   makeLabel('Septic tank', anchors.septic, new THREE.Vector3(3, 1.2, 2));
   makeLabel('Backup generator 5 kW', anchors.generator, new THREE.Vector3(-5, 1.6, 3));
+  makeLabel('Gravity-drip garden', new THREE.Vector3(GARDEN_POS.x, groundHeight(GARDEN_POS.x, GARDEN_POS.y) + 0.4, GARDEN_POS.y), new THREE.Vector3(-3, 1.6, 2));

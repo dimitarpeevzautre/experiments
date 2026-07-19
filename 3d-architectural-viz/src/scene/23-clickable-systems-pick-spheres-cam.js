@@ -42,6 +42,7 @@
   let downX = 0, downY = 0;
   canvas.addEventListener('pointerdown', (e) => { downX = e.clientX; downY = e.clientY; });
   canvas.addEventListener('pointerup', (e) => {
+    if (walk.on) return;
     if (Math.hypot(e.clientX - downX, e.clientY - downY) > 6) return; // it was a drag
     const id = pickAt(e.clientX, e.clientY);
     if (id) {
@@ -51,6 +52,7 @@
   });
   let hoverAt = 0;
   canvas.addEventListener('pointermove', (e) => {
+    if (walk.on) return;
     const now = performance.now();
     if (now - hoverAt < 120 || pointers.size > 0) return;
     hoverAt = now;
@@ -104,6 +106,13 @@
   canvas.addEventListener('pointermove', (e) => {
     const p = pointers.get(e.pointerId);
     if (!p) return;
+    if (walk.on) { // drag looks around in first person
+      const dxPx = e.clientX - p.x, dyPx = e.clientY - p.y;
+      p.x = e.clientX; p.y = e.clientY;
+      walk.yaw -= dxPx * 0.0042;
+      walk.pitch = clamp(walk.pitch - dyPx * 0.0032, -1.25, 1.25);
+      return;
+    }
     if (pointers.size === 2) {
       p.x = e.clientX; p.y = e.clientY;
       const [a, b] = [...pointers.values()];
@@ -136,10 +145,12 @@
   window.addEventListener('pointercancel', endPointer);
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
+    if (walk.on) return;
     if (tour.on) stopTour(false);
     viewGoal.size = clamp(viewGoal.size * (e.deltaY > 0 ? 1.08 : 0.925), 9, 42);
   }, { passive: false });
   canvas.addEventListener('dblclick', () => {
+    if (walk.on) { stopWalk(); return; }
     viewGoal.size = HOME.size;
     viewGoal.azimuth = HOME.azimuth;
     viewGoal.elevation = HOME.elevation;
