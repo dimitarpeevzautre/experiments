@@ -12,7 +12,13 @@ THREE = sys.argv[1] if len(sys.argv) > 1 else str(ROOT / "vendor" / "three.min.j
 
 page = (ROOT / "src" / "page.html").read_text()
 three = pathlib.Path(THREE).read_text()
-scene = (ROOT / "src" / "scene.js").read_text()
+# the scene is split into ordered section modules sharing one closure
+parts = sorted((ROOT / "src" / "scene").glob("*.js"))
+scene = (
+    "(function () {\n'use strict';\n"
+    + "\n".join(p.read_text() for p in parts)
+    + "\n})();\n"
+)
 project = (ROOT / "src" / "project.js").read_text()
 budget = (ROOT / "src" / "budget.json").read_text().strip()
 project = "window.BUDGET = " + budget + ";\n" + project

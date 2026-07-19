@@ -32,6 +32,26 @@
       radial-gradient(120% 90% at 70% 10%, rgba(120, 150, 200, 0.16) 0%, rgba(0, 0, 0, 0) 55%),
       linear-gradient(112deg, #1b2231 0%, #131a28 55%, #0e1420 100%);
   }
+  body.winter {
+    background:
+      radial-gradient(120% 90% at 12% 8%, rgba(255, 240, 214, 0.75) 0%, rgba(255, 240, 214, 0) 55%),
+      linear-gradient(112deg, #e3e9ee 0%, #d5dee6 30%, #c3d0da 60%, #b0c1cf 100%);
+  }
+  #tour-caption {
+    position: fixed; left: 50%; bottom: clamp(64px, 10vh, 92px);
+    transform: translateX(-50%) translateY(10px);
+    background: var(--plate);
+    border: 1px solid var(--plate-line);
+    border-radius: 3px;
+    padding: 11px 22px;
+    color: var(--ink);
+    font-size: 0.95rem; line-height: 1.5; letter-spacing: 0.02em;
+    max-width: min(620px, 86vw); text-align: center;
+    opacity: 0; pointer-events: none; z-index: 12;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  #tour-caption.show { opacity: 1; transform: translateX(-50%); }
+  @media (prefers-reduced-motion: reduce) { #tour-caption { transition: none; } }
   #stage { z-index: 1; }
   #vignette { z-index: 2; }
   header, #legend, nav { z-index: 10; }
@@ -248,6 +268,7 @@
 </header>
 
 <div id="legend"><strong>Golden hour study</strong> &nbsp;—&nbsp; drag to orbit · right-drag to pan · scroll to zoom · double-click resets</div>
+<div id="tour-caption" role="status"></div>
 
 <nav aria-label="View controls">
   <div id="compass-wrap">
@@ -259,10 +280,12 @@
     N
   </div>
   <button id="chip-project" type="button">Project</button>
+  <button id="chip-tour" type="button">Tour</button>
   <button id="chip-roof" type="button">Roof on</button>
   <button id="chip-xray" type="button">X-ray walls</button>
   <button id="chip-systems" type="button">Systems</button>
   <button id="chip-top" type="button">Top view</button>
+  <button id="chip-season" type="button">Spring</button>
   <button id="chip-cycle" type="button">Day cycle</button>
   <button id="chip-sound" type="button">Sound</button>
 </nav>

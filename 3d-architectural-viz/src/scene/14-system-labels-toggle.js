@@ -1,0 +1,46 @@
+  // ---------- system labels (toggle) ----------
+  const labels = new THREE.Group();
+  labels.visible = false;
+  scene.add(labels);
+  function makeLabel(text, anchor, liftY) {
+    const cv = document.createElement('canvas');
+    const g = cv.getContext('2d');
+    const font = '500 44px Georgia, "Times New Roman", serif';
+    g.font = font;
+    const tw = g.measureText(text.toUpperCase()).width;
+    cv.width = Math.ceil(tw + 76); cv.height = 84;
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = C.labelBg;
+    const r = 20, wpx = cv.width, hpx = 64, y0 = 10;
+    ctx.beginPath();
+    ctx.moveTo(r, y0); ctx.lineTo(wpx - r, y0); ctx.arcTo(wpx, y0, wpx, y0 + r, r);
+    ctx.lineTo(wpx, y0 + hpx - r); ctx.arcTo(wpx, y0 + hpx, wpx - r, y0 + hpx, r);
+    ctx.lineTo(r, y0 + hpx); ctx.arcTo(0, y0 + hpx, 0, y0 + hpx - r, r);
+    ctx.lineTo(0, y0 + r); ctx.arcTo(0, y0, r, y0, r);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(90,60,35,0.5)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.font = font;
+    ctx.fillStyle = C.label;
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text.toUpperCase(), 38, y0 + hpx / 2 + 2);
+    const tx = new THREE.CanvasTexture(cv);
+    tx.colorSpace = THREE.SRGBColorSpace;
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tx, depthTest: false, transparent: true }));
+    const scale = 2.1;
+    sp.scale.set(scale * cv.width / cv.height, scale, 1);
+    sp.position.copy(anchor).add(liftY instanceof THREE.Vector3 ? liftY : new THREE.Vector3(0, liftY, 0));
+    sp.renderOrder = 10;
+    labels.add(sp);
+    const lineGeo = new THREE.BufferGeometry().setFromPoints([anchor, sp.position.clone().add(new THREE.Vector3(0, -scale * 0.5, 0))]);
+    const line = new THREE.Line(lineGeo, new THREE.LineBasicMaterial({ color: 0x6b4a2e, transparent: true, opacity: 0.75, depthTest: false }));
+    line.renderOrder = 9;
+    labels.add(line);
+  }
+  makeLabel('Solar array 11 kWp', anchors.solar, new THREE.Vector3(-6, 2.2, 2));
+  makeLabel('Battery 10 kWh', anchors.battery, new THREE.Vector3(5, 0.3, 6));
+  makeLabel('Rain cistern 10 m³', anchors.cistern, new THREE.Vector3(-2, 1.6, -1));
+  makeLabel('Borehole well', anchors.well, new THREE.Vector3(-3, 1.6, 1));
+  makeLabel('Septic tank', anchors.septic, new THREE.Vector3(3, 1.2, 2));
+  makeLabel('Backup generator 5 kW', anchors.generator, new THREE.Vector3(-5, 1.6, 3));

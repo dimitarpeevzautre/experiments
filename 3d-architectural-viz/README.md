@@ -7,8 +7,8 @@ edge, a curving gravel path, and a grove of 18 blooming cherry blossom trees —
 rendered isometrically in soft golden-hour light.
 
 Off-grid systems are modelled to scale and labelled: solar array + wall-mounted
-battery, rain cistern (fed by a roof downpipe), borehole well, and septic tank
-with leach field.
+battery, rain cistern (fed by a roof downpipe), borehole well, septic tank and
+a backup generator.
 
 The cabin interior is furnished: a front room behind the glazed gable
 (kitchenette, dining, sofa), a small bathroom and bedroom along the back wall,
@@ -36,6 +36,11 @@ Controls:
   curve, 10 kWh battery state, load schedule (pond pump, solar-clipped
   borehole window, afternoon heat pump, evening loads) and AGS generator
   backup; nights show the cabin glowing warm under a moonlit sky
+- **Tour** — a guided cinematic pass with captions: gate, cabin, pond,
+  systems, grove; any drag or scroll hands control back
+- **Season** — spring blossoms, summer greens, autumn ambers, or winter with
+  snow, bare trees, a frozen pond, chimney smoke and the energy model switched
+  to short days and biomass heating
 - **Top view** — plan view of the whole site
 - **Sound** — calm generative ambient loop (WebAudio, no assets)
 
@@ -47,9 +52,9 @@ All motion respects `prefers-reduced-motion`.
 
 ## Structure
 
-- `src/scene.js` — the scene: terrain heightfield with carved pool basin,
-  procedural cabin, instanced blossom canopies, site systems, camera and UI
-  wiring (deterministic, seeded PRNG)
+- `src/scene/` — the scene as ordered section modules sharing one closure
+  (terrain, cabin, pool, grove, systems, dogs, seasons, day cycle, tour,
+  render loop …), concatenated by the build; deterministic via a seeded PRNG
 - `src/project.js` — the project brief as data (`window.PROJECT`) plus the
   drawer UI; each component record carries empty `budget`/`status`/`progress`
   fields so budgeting, planning and progress tracking can attach next
