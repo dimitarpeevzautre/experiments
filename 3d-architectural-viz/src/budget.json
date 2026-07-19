@@ -1,0 +1,10 @@
+{
+  "currency": "EUR",
+  "note": "Draft estimates — edit this file and rebuild to publish.",
+  "components": {
+    "energy": { "planned": 20000, "committed": 0, "spent": 0 },
+    "living": { "planned": 60000, "committed": 0, "spent": 0 },
+    "hydro": { "planned": 9500, "committed": 0, "spent": 0 },
+    "pond": { "planned": 14000, "committed": 0, "spent": 0 }
+  }
+}

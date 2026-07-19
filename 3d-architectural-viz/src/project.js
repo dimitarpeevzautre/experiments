@@ -41,9 +41,18 @@
         budget: null, status: null, progress: null
       }
     ],
-    roadmap: 'Next: budgeting, planning and build progress will attach to these components.'
+    roadmap: 'Next: planning and build progress will attach to these components.'
   };
   window.PROJECT = PROJECT;
+
+  // merge the budget (injected at build time from src/budget.json)
+  const BUDGET = window.BUDGET || { currency: 'EUR', note: '', components: {} };
+  const fmt = new Intl.NumberFormat('en', { style: 'currency', currency: BUDGET.currency || 'EUR', maximumFractionDigits: 0 });
+  let plannedTotal = 0, spentTotal = 0;
+  for (const c of PROJECT.components) {
+    c.budget = BUDGET.components[c.id] || null;
+    if (c.budget) { plannedTotal += c.budget.planned || 0; spentTotal += c.budget.spent || 0; }
+  }
 
   // ---------- drawer ----------
   const drawer = document.createElement('aside');
@@ -58,11 +67,22 @@
     <dl class="overview">
       ${PROJECT.overview.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}
     </dl>
+    <div class="budget-summary">
+      <div class="budget-line"><span>Draft budget</span><b>${fmt.format(plannedTotal)}</b></div>
+      <div class="budget-line"><span>Spent</span><b>${fmt.format(spentTotal)}</b></div>
+      <p class="budget-note">${esc(BUDGET.note || '')}</p>
+    </div>
     ${PROJECT.components.map((c, i) => `
-      <section class="component" data-id="${c.id}">
-        <p class="eyebrow">${String(i + 1).padStart(2, '0')} · ${esc(c.name)}</p>
+      <section class="component" data-id="${c.id}" tabindex="0" role="button"
+               aria-label="Focus ${esc(c.name)} on the site model">
+        <p class="eyebrow">${String(i + 1).padStart(2, '0')} · ${esc(c.name)}<span class="focus-hint">view on site →</span></p>
         <p class="spec">${esc(c.spec)}</p>
         <p class="why">${esc(c.motivation)}</p>
+        ${c.budget ? `
+        <div class="budget">
+          <div class="bbar"><i style="width:${c.budget.planned ? Math.min(100, c.budget.spent / c.budget.planned * 100).toFixed(1) : 0}%"></i></div>
+          <span>${fmt.format(c.budget.spent)} spent of ${fmt.format(c.budget.planned)} planned</span>
+        </div>` : ''}
       </section>`).join('')}
     <p class="roadmap">${esc(PROJECT.roadmap)}</p>
   `;
@@ -86,4 +106,21 @@
   chip.addEventListener('click', () => setOpen(!open));
   closeBtn.addEventListener('click', () => setOpen(false));
   window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && open) setOpen(false); });
+
+  // drawer card → fly the camera to that component
+  for (const card of drawer.querySelectorAll('.component')) {
+    const go = () => window.caroline && window.caroline.focusComponent(card.dataset.id);
+    card.addEventListener('click', go);
+    card.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+  }
+  // clicked object in the scene → open the drawer at that card
+  window.addEventListener('caroline:pick', (e) => {
+    if (!open) setOpen(true);
+    const card = drawer.querySelector(`.component[data-id="${e.detail.id}"]`);
+    if (!card) return;
+    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    card.classList.remove('flash');
+    void card.offsetWidth; // restart the animation
+    card.classList.add('flash');
+  });
 })();

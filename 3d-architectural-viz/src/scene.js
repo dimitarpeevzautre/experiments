@@ -109,11 +109,14 @@
   sun.shadow.radius = 4;
   scene.add(sun, sun.target);
 
-  scene.add(new THREE.HemisphereLight(0xffe4c2, 0x6b7c4a, 0.55));
-  scene.add(new THREE.AmbientLight(0xb9c8d8, 0.32));
+  const hemi = new THREE.HemisphereLight(0xffe4c2, 0x6b7c4a, 0.55);
+  scene.add(hemi);
+  const amb = new THREE.AmbientLight(0xb9c8d8, 0.32);
+  scene.add(amb);
   const rim = new THREE.DirectionalLight(0xcfe0ee, 0.35); // cool fill from the hazy east
   rim.position.set(48, 22, -30);
   scene.add(rim);
+  const interiorLights = []; // filled by the cabin interior, brightened at night
 
   // ---------- terrain ----------
   // Plot is 60 m (x) by 40 m (z), centred on the origin.
@@ -585,6 +588,7 @@
     const bulb2 = new THREE.PointLight(0xffc98a, 2.5, 5, 2);
     bulb2.position.set(0, y0 + MEZZ_Y + 1.1, -2.4);
     inter.add(bulb2);
+    interiorLights.push({ light: bulb, base: 6 }, { light: bulb2, base: 2.5 });
   }
 
   // battery on the east side wall
@@ -642,17 +646,83 @@
     deep.position.y = PAD_H - 0.72;
     deep.receiveShadow = true;
     pool.add(deep);
-    // water surface
-    const water = new THREE.Mesh(
-      new THREE.ShapeGeometry(poolShape),
-      new THREE.MeshPhysicalMaterial({
-        color: C.water, transparent: true, opacity: 0.78,
-        roughness: 0.12, metalness: 0, clearcoat: 0.6, clearcoatRoughness: 0.2
-      })
-    );
+    // water surface with drifting ripple normals
+    function rippleNormalMap() {
+      const N = 128;
+      const h = new Float32Array(N * N);
+      for (let oct = 0; oct < 3; oct++) { // tileable value noise via wrapped soft blobs
+        const count = 24 << oct, r = N / (4 << oct);
+        for (let i = 0; i < count; i++) {
+          const cxp = rand() * N, cyp = rand() * N, s = rand() < 0.5 ? 1 : -1;
+          const amp = s * (1 / (oct + 1));
+          const ir = Math.ceil(r);
+          for (let dy = -ir; dy <= ir; dy++) {
+            for (let dx = -ir; dx <= ir; dx++) {
+              const d = Math.hypot(dx, dy) / r;
+              if (d > 1) continue;
+              const px = ((Math.round(cxp) + dx) % N + N) % N;
+              const py = ((Math.round(cyp) + dy) % N + N) % N;
+              h[py * N + px] += amp * (1 + Math.cos(d * Math.PI)) * 0.5;
+            }
+          }
+        }
+      }
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = N;
+      const ctx = cv.getContext('2d');
+      const img = ctx.createImageData(N, N);
+      for (let y = 0; y < N; y++) {
+        for (let x = 0; x < N; x++) {
+          const gx = h[y * N + ((x + 1) % N)] - h[y * N + ((x - 1 + N) % N)];
+          const gy = h[((y + 1) % N) * N + x] - h[(((y - 1 + N) % N)) * N + x];
+          const k = (y * N + x) * 4;
+          img.data[k] = clamp(128 + gx * 90, 0, 255);
+          img.data[k + 1] = clamp(128 + gy * 90, 0, 255);
+          img.data[k + 2] = 255;
+          img.data[k + 3] = 255;
+        }
+      }
+      ctx.putImageData(img, 0, 0);
+      const tx = new THREE.CanvasTexture(cv);
+      tx.wrapS = tx.wrapT = THREE.RepeatWrapping;
+      tx.repeat.set(1.6, 1.6);
+      return tx;
+    }
+    const waterMat = new THREE.MeshPhysicalMaterial({
+      color: C.water, transparent: true, opacity: 0.78,
+      roughness: 0.12, metalness: 0, clearcoat: 0.6, clearcoatRoughness: 0.2,
+      normalMap: rippleNormalMap(), normalScale: new THREE.Vector2(0.4, 0.4)
+    });
+    const water = new THREE.Mesh(new THREE.ShapeGeometry(poolShape), waterMat);
     water.rotation.x = -Math.PI / 2;
     water.position.y = PAD_H - 0.14;
     pool.add(water);
+    pool.userData.waterMat = waterMat;
+    // foam waterline hugging the rim
+    {
+      const pts = poolShape.getPoints(72);
+      const verts = [], idx = [];
+      for (let i = 0; i < pts.length; i++) {
+        const p = pts[i], wz = -p.y;
+        const dir = new THREE.Vector2(p.x - POOL_POS.x, wz - POOL_POS.y).normalize();
+        verts.push(p.x - dir.x * 0.24, PAD_H - 0.132, wz - dir.y * 0.24);
+        verts.push(p.x + dir.x * 0.05, PAD_H - 0.128, wz + dir.y * 0.05);
+      }
+      const n = pts.length;
+      for (let i = 0; i < n; i++) {
+        const a = i * 2, b = ((i + 1) % n) * 2;
+        idx.push(a, a + 1, b, a + 1, b + 1, b);
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+      geo.computeVertexNormals();
+      const foam = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
+        color: 0xe8fbfc, transparent: true, opacity: 0.32, depthWrite: false
+      }));
+      foam.renderOrder = 2;
+      pool.add(foam);
+      pool.userData.foam = foam;
+    }
     // gentle shimmer: two faint highlight rings animated in the loop
     // coping stones around the rim
     const rimPts = poolShape.getPoints(64);
@@ -820,6 +890,37 @@
       patio.add(sh);
     }
     void doorW;
+  }
+
+  // ---------- bench edging: retaining wall uphill, boulders at the downhill lip ----------
+  {
+    // dry-stone retaining wall where the patio bench cuts into the rising ground
+    const wallMatA = std(C.stoneGrey, { roughness: 1 });
+    const wallMatB = std(C.stoneCool, { roughness: 1 });
+    for (let row = 0; row < 2; row++) {
+      const n = 13 - row * 2;
+      for (let i = 0; i < n; i++) {
+        const th = (55 + (i + (row ? 0.5 : 0)) * (80 / (n - 1))) * Math.PI / 180;
+        const wx = PATIO_POS.x + Math.cos(th) * (5.2 + row * 0.12);
+        const wz = PATIO_POS.y + Math.sin(th) * (5.2 + row * 0.12);
+        const st = mesh(new THREE.BoxGeometry(rr(0.5, 0.62), 0.26, rr(0.28, 0.34)),
+          rand() < 0.5 ? wallMatA : wallMatB,
+          wx, groundHeight(wx, wz) + 0.13 + row * 0.24, wz);
+        st.rotation.y = th + Math.PI / 2 + rr(-0.08, 0.08);
+        land.add(st);
+      }
+    }
+    // weathered boulders where the bench falls away downhill of the pool
+    for (const deg of [195, 220, 247]) {
+      const th = deg * Math.PI / 180;
+      const bx = POOL_POS.x + Math.cos(th) * 6.6, bz = POOL_POS.y + Math.sin(th) * 5.4;
+      const b = mesh(blobGeometry(0.6, 1, 0.42),
+        new THREE.MeshStandardMaterial({ color: C.stoneGrey, roughness: 1, flatShading: true }),
+        bx, groundHeight(bx, bz) + 0.22, bz);
+      b.scale.set(rr(1.0, 1.5), rr(0.6, 0.9), rr(1.0, 1.4));
+      b.rotation.y = rr(0, Math.PI);
+      land.add(b);
+    }
   }
 
   // ---------- cherry blossom grove (18 trees, lower half) ----------
@@ -1444,9 +1545,10 @@
     xray: document.getElementById('chip-xray'),
     top: document.getElementById('chip-top'),
     systems: document.getElementById('chip-systems'),
-    sound: document.getElementById('chip-sound')
+    sound: document.getElementById('chip-sound'),
+    cycle: document.getElementById('chip-cycle')
   };
-  const state = { roof: true, xray: false, top: false, systems: false, sound: false };
+  const state = { roof: true, xray: false, top: false, systems: false, sound: false, cycle: false };
   const savedView = { azimuth: view.azimuth, elevation: view.elevation, size: view.size, target: view.target.clone() };
 
   function refreshChips() {
@@ -1457,6 +1559,7 @@
     chips.systems.classList.toggle('active', state.systems);
     chips.sound.textContent = state.sound ? 'Sound on' : 'Sound';
     chips.sound.classList.toggle('active', state.sound);
+    chips.cycle.classList.toggle('active', state.cycle);
   }
   chips.roof.addEventListener('click', () => {
     state.roof = !state.roof;
@@ -1500,7 +1603,176 @@
     if (state.sound) startMusic(); else stopMusic();
     refreshChips();
   });
+
+  // ---------- day cycle + energy simulation ----------
+  // one simulated day lasts 150 s; the model follows the project brief:
+  // 11 kWp PV, 10 kWh battery, solar-clipped borehole pump (11:00–15:00),
+  // constant pond pump, heat pump on summer afternoons, AGS generator backup
+  const DAY_SECONDS = 150;
+  const cycle = { T: 8, playing: true, soc: 6.0, gen: false, pv: 0, load: 0, borehole: false };
+  const dayDefaults = {
+    sunPos: sun.position.clone(), sunColor: sun.color.clone(), sunInt: sun.intensity,
+    hemiInt: hemi.intensity, ambInt: amb.intensity, rimInt: rim.intensity, rimColor: rim.color.clone()
+  };
+  const veil = document.getElementById('night-veil');
+  const dash = document.getElementById('dash');
+  const dashEls = dash ? {
+    time: document.getElementById('dash-time'),
+    scrub: document.getElementById('dash-scrub'),
+    play: document.getElementById('dash-play'),
+    pv: document.getElementById('dash-pv'), barPv: document.getElementById('bar-pv'),
+    batt: document.getElementById('dash-batt'), barBatt: document.getElementById('bar-batt'),
+    load: document.getElementById('dash-load'), barLoad: document.getElementById('bar-load'),
+    gen: document.getElementById('dash-gen'), pump: document.getElementById('dash-pump')
+  } : null;
+  function dayFactor(T) {
+    return Math.max(0, Math.sin(Math.PI * (T - 6) / 14)); // 0 at 06:00 and 20:00
+  }
+  function simStep(dtH) {
+    const m = dayFactor(cycle.T);
+    cycle.pv = 11 * Math.pow(m, 1.35);
+    let load = 0.25 + 0.08; // house baseload + pond eco-pump
+    cycle.borehole = cycle.T >= 11 && cycle.T < 15 && cycle.pv > 2; // solar clipping window
+    if (cycle.borehole) load += 1.5;
+    if (cycle.T >= 12 && cycle.T < 17) load += 1.0; // heat pump, summer afternoon
+    if (cycle.T >= 18 && cycle.T < 23) load += 0.7; // evening cooking + lights
+    cycle.load = load;
+    let net = cycle.pv - load;
+    if (cycle.gen) { net += 4; if (cycle.soc >= 6) cycle.gen = false; }
+    else if (cycle.soc <= 1.2 && net < 0) cycle.gen = true;
+    cycle.soc = clamp(cycle.soc + clamp(net, -6, 4) * dtH, 0.4, 10);
+  }
+  const sunLow = new THREE.Color(0xff9a55), sunMid = new THREE.Color(0xffd9a4), sunHigh = new THREE.Color(0xfff1da);
+  function applyCycleVisuals(T) {
+    const m = dayFactor(T);
+    const d = smoothstep(0, 0.12, m); // day↔night blend
+    // sun sweeps east → west; site north lies along the +x/+z diagonal
+    const A = (95 + clamp((T - 6) / 14, 0, 1) * 170) * Math.PI / 180;
+    const hx = 0.7071 * (Math.cos(A) - Math.sin(A));
+    const hz = 0.7071 * (Math.cos(A) + Math.sin(A));
+    const elev = Math.max(0.06, m) * 1.05;
+    sun.position.set(hx * Math.cos(elev), Math.sin(elev), hz * Math.cos(elev)).multiplyScalar(78);
+    sun.visible = d > 0.02;
+    sun.intensity = dayDefaults.sunInt * (0.3 + 0.7 * d);
+    sun.color.copy(m < 0.45 ? sunLow.clone().lerp(sunMid, m / 0.45) : sunMid.clone().lerp(sunHigh, (m - 0.45) / 0.55));
+    hemi.intensity = dayDefaults.hemiInt * (0.15 + 0.85 * d);
+    amb.intensity = dayDefaults.ambInt * (0.3 + 0.7 * d) + 0.07 * (1 - d);
+    rim.intensity = 0.35 * d + 0.5 * (1 - d); // doubles as moonlight
+    rim.color.setHex(d > 0.5 ? 0xcfe0ee : 0x8fa8c8);
+    for (const b of interiorLights) b.light.intensity = b.base * (1 + 1.3 * (1 - d));
+    glassMat.emissive.setHex(0xffb85c);
+    glassMat.emissiveIntensity = 0.28 * (1 - d);
+    for (const bf of butterflies) bf.g.visible = m > 0.25;
+    if (veil) veil.style.opacity = ((1 - d) * 0.9).toFixed(3);
+  }
+  function restoreDayDefaults() {
+    sun.visible = true;
+    sun.position.copy(dayDefaults.sunPos);
+    sun.color.copy(dayDefaults.sunColor);
+    sun.intensity = dayDefaults.sunInt;
+    hemi.intensity = dayDefaults.hemiInt;
+    amb.intensity = dayDefaults.ambInt;
+    rim.intensity = dayDefaults.rimInt;
+    rim.color.copy(dayDefaults.rimColor);
+    for (const b of interiorLights) b.light.intensity = b.base;
+    glassMat.emissiveIntensity = 0;
+    for (const bf of butterflies) bf.g.visible = true;
+    if (veil) veil.style.opacity = '0';
+  }
+  function updateDash() {
+    if (!dashEls) return;
+    const hh = String(Math.floor(cycle.T)).padStart(2, '0');
+    const mm = String(Math.floor((cycle.T % 1) * 60)).padStart(2, '0');
+    dashEls.time.textContent = `${hh}:${mm}`;
+    if (document.activeElement !== dashEls.scrub) dashEls.scrub.value = Math.round(cycle.T * 60);
+    dashEls.pv.textContent = cycle.pv.toFixed(1) + ' kW';
+    dashEls.barPv.style.width = (cycle.pv / 11 * 100).toFixed(1) + '%';
+    dashEls.batt.textContent = Math.round(cycle.soc / 10 * 100) + '%';
+    dashEls.barBatt.style.width = (cycle.soc / 10 * 100).toFixed(1) + '%';
+    dashEls.load.textContent = cycle.load.toFixed(2) + ' kW';
+    dashEls.barLoad.style.width = Math.min(100, cycle.load / 4 * 100).toFixed(1) + '%';
+    dashEls.gen.textContent = cycle.gen ? 'running' : 'off';
+    dashEls.gen.classList.toggle('on', cycle.gen);
+    dashEls.pump.textContent = cycle.borehole ? 'pumping' : 'idle';
+    dashEls.pump.classList.toggle('on', cycle.borehole);
+  }
+  chips.cycle.addEventListener('click', () => {
+    state.cycle = !state.cycle;
+    if (dash) dash.hidden = !state.cycle;
+    if (!state.cycle) restoreDayDefaults();
+    else { simStep(0); applyCycleVisuals(cycle.T); updateDash(); }
+    refreshChips();
+  });
+  if (dashEls) {
+    dashEls.scrub.addEventListener('input', () => {
+      cycle.T = dashEls.scrub.value / 60;
+      simStep(0);
+    });
+    dashEls.play.addEventListener('click', () => {
+      cycle.playing = !cycle.playing;
+      dashEls.play.textContent = cycle.playing ? '❚❚' : '▶';
+    });
+  }
   refreshChips();
+
+  // ---------- clickable systems: pick spheres → camera fly-to + drawer card ----------
+  const pickGroup = new THREE.Group();
+  scene.add(pickGroup);
+  const FOCUS = { // per-component camera framing
+    energy: { target: new THREE.Vector3(21, CABIN_H + 4.2, 12), size: 8 },
+    living: { target: new THREE.Vector3(21, CABIN_H + 1.6, 12), size: 8.5 },
+    hydro: { target: new THREE.Vector3(11, baseHeight(11, 1) + 1, 1), size: 15 },
+    pond: { target: new THREE.Vector3(POOL_POS.x + 1.5, PAD_H + 0.5, POOL_POS.y + 0.5), size: 9 }
+  };
+  {
+    const pickMat = new THREE.MeshBasicMaterial({ visible: false });
+    function pickSphere(id, x, y, z, r) {
+      const m = new THREE.Mesh(new THREE.SphereGeometry(r, 8, 6), pickMat);
+      m.position.set(x, y, z);
+      m.userData.component = id;
+      pickGroup.add(m);
+    }
+    pickSphere('energy', anchors.solar.x, anchors.solar.y, anchors.solar.z, 3.2);
+    pickSphere('energy', anchors.battery.x, anchors.battery.y - 0.6, anchors.battery.z, 1.1);
+    pickSphere('energy', anchors.generator.x, anchors.generator.y - 0.4, anchors.generator.z, 1.3);
+    pickSphere('living', CABIN_POS.x, CABIN_H + 1.6, CABIN_POS.y, 3.4);
+    pickSphere('hydro', anchors.cistern.x, anchors.cistern.y, anchors.cistern.z, 1.8);
+    pickSphere('hydro', anchors.well.x, anchors.well.y - 0.3, anchors.well.z, 1.2);
+    pickSphere('pond', POOL_POS.x + 0.5, PAD_H - 0.2, POOL_POS.y, 5.0);
+  }
+  const raycaster = new THREE.Raycaster();
+  const ndc = new THREE.Vector2();
+  function pickAt(clientX, clientY) {
+    const r = canvas.getBoundingClientRect();
+    ndc.set(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
+    raycaster.setFromCamera(ndc, camera);
+    const hits = raycaster.intersectObjects(pickGroup.children, false);
+    return hits.length ? hits[0].object.userData.component : null;
+  }
+  function focusComponent(id) {
+    const f = FOCUS[id];
+    if (!f) return;
+    viewGoal.target.copy(f.target);
+    viewGoal.size = f.size;
+    if (state.top) { state.top = false; refreshChips(); }
+  }
+  let downX = 0, downY = 0;
+  canvas.addEventListener('pointerdown', (e) => { downX = e.clientX; downY = e.clientY; });
+  canvas.addEventListener('pointerup', (e) => {
+    if (Math.hypot(e.clientX - downX, e.clientY - downY) > 6) return; // it was a drag
+    const id = pickAt(e.clientX, e.clientY);
+    if (id) {
+      focusComponent(id);
+      window.dispatchEvent(new CustomEvent('caroline:pick', { detail: { id } }));
+    }
+  });
+  let hoverAt = 0;
+  canvas.addEventListener('pointermove', (e) => {
+    const now = performance.now();
+    if (now - hoverAt < 120 || pointers.size > 0) return;
+    hoverAt = now;
+    canvas.style.cursor = pickAt(e.clientX, e.clientY) ? 'pointer' : 'grab';
+  });
 
   // small API for the project drawer (and future budgeting/progress panels)
   window.caroline = {
@@ -1511,7 +1783,8 @@
       state.systems = v;
       labels.visible = v;
       refreshChips();
-    }
+    },
+    focusComponent
   };
 
   // controls: drag to orbit · right/shift-drag (or two-finger drag) to pan ·
@@ -1597,6 +1870,14 @@
     const dt = Math.min(clock.getDelta(), 0.05);
     const t = clock.elapsedTime;
     // ease camera toward goal
+    if (state.cycle) {
+      if (cycle.playing) {
+        cycle.T = (cycle.T + dt * 24 / DAY_SECONDS) % 24;
+        simStep(dt * 24 / DAY_SECONDS);
+      }
+      applyCycleVisuals(cycle.T);
+      updateDash();
+    }
     const k = 1 - Math.pow(0.0015, dt);
     view.azimuth += (viewGoal.azimuth - view.azimuth) * k;
     view.elevation += (viewGoal.elevation - view.elevation) * k;
@@ -1773,9 +2054,20 @@
         }
       }
     }
+    // gentle water drift
+    if (pool.userData.waterMat) {
+      pool.userData.waterMat.normalMap.offset.set(t * 0.012, t * 0.017);
+      if (pool.userData.foam) pool.userData.foam.material.opacity = 0.28 + 0.08 * Math.sin(t * 1.7);
+    }
     renderer.render(scene, camera);
     requestAnimationFrame(tick);
   }
   resize();
+  if (!reduceMotion) { // opening glide: wide aerial easing into the home view
+    view.size = 54;
+    view.elevation = 1.02;
+    view.azimuth = HOME.azimuth - 0.5;
+    view.target.y = 8;
+  }
   tick();
 })();

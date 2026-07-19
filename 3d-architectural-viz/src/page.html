@@ -26,6 +26,49 @@
     position: fixed; inset: 0; pointer-events: none;
     background: radial-gradient(115% 100% at 50% 42%, rgba(0,0,0,0) 58%, rgba(46, 34, 24, 0.28) 100%);
   }
+  #night-veil {
+    position: fixed; inset: 0; pointer-events: none; opacity: 0;
+    background:
+      radial-gradient(120% 90% at 70% 10%, rgba(120, 150, 200, 0.16) 0%, rgba(0, 0, 0, 0) 55%),
+      linear-gradient(112deg, #1b2231 0%, #131a28 55%, #0e1420 100%);
+  }
+  #stage { z-index: 1; }
+  #vignette { z-index: 2; }
+  header, #legend, nav { z-index: 10; }
+
+  /* day-cycle dashboard */
+  #dash {
+    position: fixed; left: clamp(18px, 3vw, 40px); bottom: calc(clamp(14px, 3vh, 30px) + 48px);
+    width: min(270px, 84vw);
+    background: var(--plate);
+    border: 1px solid var(--plate-line);
+    border-radius: 3px;
+    padding: 12px 14px;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    z-index: 10;
+  }
+  #dash .dash-time { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  #dash .dash-time span { font-size: 1.05rem; letter-spacing: 0.08em; min-width: 3.2em; }
+  #dash-play {
+    font: inherit; font-size: 0.7rem; line-height: 1;
+    background: none; border: 1px solid var(--plate-line); border-radius: 2px;
+    color: inherit; cursor: pointer; padding: 5px 7px;
+  }
+  #dash-scrub { flex: 1; accent-color: #7a5a35; min-width: 0; }
+  #dash .dash-row {
+    display: grid; grid-template-columns: 4.2em 1fr 4.2em; align-items: center; gap: 8px;
+    font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--ink-soft); margin: 6px 0;
+  }
+  #dash .dash-row b { font-size: 0.78rem; letter-spacing: 0.04em; color: var(--ink); text-align: right; font-weight: 600; }
+  #dash .bar { height: 6px; background: rgba(90, 60, 35, 0.16); border-radius: 3px; overflow: hidden; }
+  #dash .bar i { display: block; height: 100%; width: 0; background: #a9822f; border-radius: 3px; transition: width 0.2s linear; }
+  #bar-batt { background: #6f8f4e; }
+  #bar-load { background: #b06a3c; }
+  #dash .states { display: flex; justify-content: space-between; grid-template-columns: none; margin-top: 9px; }
+  #dash .states b { margin-left: 0.5em; font-weight: 600; }
+  #dash .states b.on { color: #8a5a1f; }
 
   header {
     position: fixed; top: clamp(16px, 3vh, 34px); left: clamp(18px, 3vw, 40px);
@@ -96,7 +139,9 @@
 
   @media (max-width: 640px) {
     #legend { display: none; }
+    nav { flex-direction: row; flex-wrap: wrap; justify-content: flex-end; max-width: 62vw; }
     nav button { padding: 8px 12px; letter-spacing: 0.18em; }
+    #dash { bottom: clamp(14px, 3vh, 30px); }
     header { max-width: calc(100vw - 36px); }
     header h1 { font-size: 1.3rem; letter-spacing: 0.12em; }
     header p { font-size: 0.62rem; letter-spacing: 0.16em; }
@@ -133,7 +178,36 @@
     color: var(--ink-soft); padding-top: 0.3em;
   }
   #drawer .overview dd { margin: 0; font-size: 0.92rem; line-height: 1.5; }
-  #drawer .component { border-top: 1px solid rgba(90, 60, 35, 0.25); padding: 1.15em 0 0.45em; }
+  #drawer .component {
+    border-top: 1px solid rgba(90, 60, 35, 0.25);
+    padding: 1.15em 0.5em 0.45em;
+    margin: 0 -0.5em;
+    cursor: pointer;
+    transition: background 0.25s ease;
+  }
+  #drawer .component:hover { background: rgba(90, 60, 35, 0.06); }
+  #drawer .component:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+  #drawer .component.flash { animation: card-flash 1.6s ease; }
+  @keyframes card-flash {
+    0%, 30% { background: rgba(169, 130, 47, 0.18); }
+    100% { background: transparent; }
+  }
+  #drawer .focus-hint { float: right; opacity: 0; transition: opacity 0.25s ease; letter-spacing: 0.12em; }
+  #drawer .component:hover .focus-hint { opacity: 0.7; }
+  #drawer .budget { margin: 0.2em 0 0.8em; }
+  #drawer .budget .bbar { height: 6px; background: rgba(90, 60, 35, 0.16); border-radius: 3px; overflow: hidden; margin-bottom: 0.45em; }
+  #drawer .budget .bbar i { display: block; height: 100%; background: #a9822f; border-radius: 3px; }
+  #drawer .budget span {
+    font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--ink-soft); font-variant-numeric: tabular-nums;
+  }
+  #drawer .budget-summary { border-top: 1px solid rgba(90, 60, 35, 0.25); padding: 1em 0 0.9em; }
+  #drawer .budget-line {
+    display: flex; justify-content: space-between; font-size: 0.85rem; margin: 0.25em 0;
+    font-variant-numeric: tabular-nums;
+  }
+  #drawer .budget-line span { font-size: 0.66rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-soft); padding-top: 0.25em; }
+  #drawer .budget-note { font-size: 0.72rem; color: var(--ink-soft); margin: 0.5em 0 0; font-style: italic; }
   #drawer .spec { font-size: 0.92rem; line-height: 1.55; margin: 0.1em 0 0.6em; font-style: italic; }
   #drawer .why { font-size: 0.88rem; line-height: 1.62; margin: 0 0 0.7em; color: rgba(74, 53, 38, 0.9); }
   #drawer .roadmap {
@@ -152,8 +226,21 @@
   @media (prefers-reduced-motion: reduce) { #drawer { transition: none; } }
 </style>
 
+<div id="night-veil"></div>
 <div id="stage"><canvas id="scene"></canvas></div>
 <div id="vignette"></div>
+
+<div id="dash" hidden>
+  <div class="dash-time">
+    <button id="dash-play" type="button" aria-label="Play or pause the day cycle">❚❚</button>
+    <span id="dash-time">08:00</span>
+    <input id="dash-scrub" type="range" min="0" max="1439" step="1" value="480" aria-label="Time of day">
+  </div>
+  <div class="dash-row"><span>Solar</span><div class="bar"><i id="bar-pv"></i></div><b id="dash-pv">0.0 kW</b></div>
+  <div class="dash-row"><span>Battery</span><div class="bar"><i id="bar-batt"></i></div><b id="dash-batt">60%</b></div>
+  <div class="dash-row"><span>Loads</span><div class="bar"><i id="bar-load"></i></div><b id="dash-load">0.33 kW</b></div>
+  <div class="dash-row states"><span>Borehole <b id="dash-pump">idle</b></span><span>Generator <b id="dash-gen">off</b></span></div>
+</div>
 
 <header>
   <h1><span class="nowrap">CAROLINE</span><span class="dot">·</span><span class="nowrap">40 × 60 SITE</span></h1>
@@ -176,6 +263,7 @@
   <button id="chip-xray" type="button">X-ray walls</button>
   <button id="chip-systems" type="button">Systems</button>
   <button id="chip-top" type="button">Top view</button>
+  <button id="chip-cycle" type="button">Day cycle</button>
   <button id="chip-sound" type="button">Sound</button>
 </nav>
 

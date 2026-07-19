@@ -27,8 +27,15 @@ Controls:
 - **X-ray walls** — see through the timber walls to the furnished interior
 - **Systems** — label the off-grid infrastructure
 - **Project** — slide-in brief: plot, topography, philosophy, and per-component
-  specs with their engineering motivations (energy plant, living space, hydro
-  loop, ecosystem); opening it surfaces the systems labels on the model
+  specs, motivations and draft budgets (edit `src/budget.json` and rebuild);
+  opening it surfaces the systems labels on the model
+- **Click any system** — clicking the solar array, cabin, cistern, borehole,
+  generator or pool flies the camera to it and opens its card in the brief;
+  clicking a card in the brief flies to the component
+- **Day cycle** — animated sun path with a live energy dashboard: 11 kWp PV
+  curve, 10 kWh battery state, load schedule (pond pump, solar-clipped
+  borehole window, afternoon heat pump, evening loads) and AGS generator
+  backup; nights show the cabin glowing warm under a moonlit sky
 - **Top view** — plan view of the whole site
 - **Sound** — calm generative ambient loop (WebAudio, no assets)
 

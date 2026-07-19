@@ -14,6 +14,8 @@ page = (ROOT / "src" / "page.html").read_text()
 three = pathlib.Path(THREE).read_text()
 scene = (ROOT / "src" / "scene.js").read_text()
 project = (ROOT / "src" / "project.js").read_text()
+budget = (ROOT / "src" / "budget.json").read_text().strip()
+project = "window.BUDGET = " + budget + ";\n" + project
 
 # the UMD build's deprecation warning is noise in a deliberately pinned vendor copy
 three = three.replace(
