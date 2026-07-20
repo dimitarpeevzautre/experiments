@@ -21,6 +21,7 @@
     petalsSeason(s);
     poolSeason(s);
     tuftMesh.visible = s !== 'winter';
+    flowerMesh.visible = s === 'spring' || s === 'summer';
     smoke.group.visible = s === 'winter';
     document.body.classList.toggle('winter', s === 'winter');
     if (state.cycle) simStep(0);

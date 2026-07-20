@@ -63,7 +63,25 @@
     for (let i = 0; i < pos.count; i++) pos.setY(i, groundHeight(pos.getX(i), pos.getZ(i)));
     grassGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(pos.count * 3), 3));
     grassGeo.computeVertexNormals();
-    const gm = new THREE.Mesh(grassGeo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0 }));
+    // tileable soft-noise grain multiplies the vertex colours
+    const gcv = document.createElement('canvas');
+    gcv.width = gcv.height = 128;
+    const gg = gcv.getContext('2d');
+    gg.fillStyle = '#f4f2ee';
+    gg.fillRect(0, 0, 128, 128);
+    for (let i = 0; i < 900; i++) {
+      const px = Math.floor(rand() * 128), py = Math.floor(rand() * 128);
+      const v = 225 + Math.floor(rand() * 30);
+      gg.fillStyle = `rgba(${v},${v},${v - 6},0.5)`;
+      for (const [ox, oy] of [[0, 0], [128, 0], [-128, 0], [0, 128], [0, -128]]) {
+        gg.fillRect(px + ox, py + oy, 2, 2 + Math.floor(rand() * 3));
+      }
+    }
+    const grainTex = new THREE.CanvasTexture(gcv);
+    grainTex.wrapS = grainTex.wrapT = THREE.RepeatWrapping;
+    grainTex.repeat.set(26, 18);
+    grainTex.colorSpace = THREE.SRGBColorSpace;
+    const gm = new THREE.Mesh(grassGeo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0, map: grainTex }));
     gm.receiveShadow = true;
     land.add(gm);
   }

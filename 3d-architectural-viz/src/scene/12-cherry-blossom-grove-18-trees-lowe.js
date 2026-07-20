@@ -16,7 +16,7 @@
   {
     const trunkMat = std(C.trunk, { roughness: 1 });
     const blossomGeo = blobGeometry(1, 2, 0.16);
-    const blobsPerTree = 11;
+    const blobsPerTree = 13;
     const totalBlobs = treeSpots.length * blobsPerTree;
     const inst = new THREE.InstancedMesh(blossomGeo,
       new THREE.MeshStandardMaterial({ roughness: 0.95, metalness: 0, emissive: 0xd96d8a, emissiveIntensity: 0.06 }), totalBlobs);
@@ -32,6 +32,8 @@
       const t1 = mesh(new THREE.CylinderGeometry(0.13, 0.2, height * 0.62, 7), trunkMat, tx, gy + height * 0.3, tz);
       t1.rotation.set(lean, 0, lean2);
       grove.add(t1);
+      // root flare where the trunk meets the ground
+      grove.add(mesh(new THREE.CylinderGeometry(0.2, 0.34, 0.22, 7), trunkMat, tx, gy + 0.1, tz));
       const topX = tx + lean2 * height * 0.8, topZ = tz - lean * height * 0.8;
       const t2 = mesh(new THREE.CylinderGeometry(0.07, 0.13, height * 0.5, 6), trunkMat, topX, gy + height * 0.75, topZ);
       t2.rotation.set(lean * 2.2, 0, lean2 * 2.2);
@@ -53,7 +55,7 @@
         const bz = topZ + Math.sin(a) * rad * 0.9;
         const by = gy + height + rr(-0.1, 0.5) - rad * 0.14;
         dummy.position.set(bx, by, bz);
-        dummy.scale.set(rr(0.85, 1.2) * canopyR * 0.58, rr(0.65, 0.92) * canopyR * 0.58, rr(0.85, 1.2) * canopyR * 0.58);
+        dummy.scale.set(rr(0.8, 1.15) * canopyR * 0.55, rr(0.62, 0.88) * canopyR * 0.55, rr(0.8, 1.15) * canopyR * 0.55);
         dummy.rotation.set(rand() * Math.PI, rand() * Math.PI, 0);
         dummy.updateMatrix();
         inst.setMatrixAt(bi, dummy.matrix);
@@ -78,6 +80,30 @@
       cp.receiveShadow = true;
       grove.add(cp);
     }
+  }
+
+  // wildflowers dotted through the lawn (spring and summer)
+  let flowerMesh;
+  {
+    const geo = new THREE.SphereGeometry(0.045, 6, 5);
+    flowerMesh = new THREE.InstancedMesh(geo, new THREE.MeshStandardMaterial({ roughness: 0.9 }), 80);
+    const dummy = new THREE.Object3D();
+    const cols = [new THREE.Color(0xe9e2cd), new THREE.Color(0xe9e2cd), new THREE.Color(0xdec06a), new THREE.Color(0xe5aebd)];
+    let placedF = 0, guardF = 0;
+    while (placedF < 80 && guardF++ < 2200) {
+      const x = rr(-HALF_X + 2, HALF_X - 2), z = rr(-HALF_Z + 2, HALF_Z - 2);
+      if (poolField(x, z) < 1.25) continue;
+      if (Math.hypot(x - PATIO_POS.x, z - PATIO_POS.y) < 5.5) continue;
+      if (Math.hypot(x - CABIN_POS.x, z - CABIN_POS.y) < 7) continue;
+      dummy.position.set(x, groundHeight(x, z) + 0.07, z);
+      dummy.scale.set(1, rr(0.7, 1.3), 1);
+      dummy.updateMatrix();
+      flowerMesh.setMatrixAt(placedF, dummy.matrix);
+      flowerMesh.setColorAt(placedF, cols[Math.floor(rand() * cols.length)]);
+      placedF++;
+    }
+    flowerMesh.castShadow = false;
+    land.add(flowerMesh);
   }
 
   const CANOPY_PAL = {

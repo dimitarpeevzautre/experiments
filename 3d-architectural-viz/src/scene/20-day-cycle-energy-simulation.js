@@ -66,6 +66,10 @@
     for (const b of interiorLights) b.light.intensity = b.base * (1 + 1.3 * (1 - d));
     glassMat.emissive.setHex(0xffb85c);
     glassMat.emissiveIntensity = 0.28 * (1 - d);
+    festoonMat.emissiveIntensity = 0.4 + 1.7 * (1 - d);
+    pool.userData.waterMat.envMapIntensity = 0.12 + 0.48 * d; // the sky map is baked golden hour
+    panelFaceMat.envMapIntensity = 0.2 + 0.9 * d;
+    glassMat.envMapIntensity = 0.25 + 0.65 * d;
     const flying = season === 'spring' || season === 'summer';
     for (const bf of butterflies) bf.g.visible = flying && m > 0.25;
     if (veil) veil.style.opacity = ((1 - d) * 0.9).toFixed(3);
@@ -91,6 +95,10 @@
     rim.color.copy(dayDefaults.rimColor);
     for (const b of interiorLights) b.light.intensity = b.base;
     glassMat.emissiveIntensity = 0;
+    festoonMat.emissiveIntensity = 0.5;
+    pool.userData.waterMat.envMapIntensity = 0.6;
+    panelFaceMat.envMapIntensity = 1.1;
+    glassMat.envMapIntensity = 0.9;
     const flying = season === 'spring' || season === 'summer';
     for (const bf of butterflies) bf.g.visible = flying;
     if (veil) veil.style.opacity = '0';

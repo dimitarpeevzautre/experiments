@@ -43,6 +43,7 @@
   canvas.addEventListener('pointerdown', (e) => { downX = e.clientX; downY = e.clientY; });
   canvas.addEventListener('pointerup', (e) => {
     if (walk.on) return;
+    if (e.detail > 1) return; // part of a double-click reset
     if (Math.hypot(e.clientX - downX, e.clientY - downY) > 6) return; // it was a drag
     const id = pickAt(e.clientX, e.clientY);
     if (id) {

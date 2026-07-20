@@ -69,8 +69,9 @@
     }
     const waterMat = new THREE.MeshPhysicalMaterial({
       color: C.water, transparent: true, opacity: 0.78,
-      roughness: 0.12, metalness: 0, clearcoat: 0.6, clearcoatRoughness: 0.2,
-      normalMap: rippleNormalMap(), normalScale: new THREE.Vector2(0.4, 0.4)
+      roughness: 0.1, metalness: 0, clearcoat: 0.7, clearcoatRoughness: 0.15,
+      normalMap: rippleNormalMap(), normalScale: new THREE.Vector2(0.4, 0.4),
+      envMap: envMapTex, envMapIntensity: 0.6
     });
     const water = new THREE.Mesh(new THREE.ShapeGeometry(poolShape), waterMat);
     water.rotation.x = -Math.PI / 2;

@@ -62,8 +62,9 @@
 
   // front gable: fully glazed with dark mullions
   const glassMat = new THREE.MeshPhysicalMaterial({
-    color: C.glass, transparent: true, opacity: 0.32, roughness: 0.08,
-    metalness: 0, side: THREE.DoubleSide
+    color: C.glass, transparent: true, opacity: 0.32, roughness: 0.06,
+    metalness: 0, side: THREE.DoubleSide,
+    envMap: envMapTex, envMapIntensity: 0.9
   });
   {
     const front = new THREE.Group();
@@ -95,6 +96,14 @@
     wallsGroup.add(front);
   }
 
+  // cream corner boards frame the siding
+  {
+    const trim = std(0xe8dfd0, { roughness: 0.85 });
+    for (const [tx, tz] of [[-W / 2 + 0.05, -L / 2 + 0.05], [W / 2 - 0.05, -L / 2 + 0.05], [-W / 2 + 0.05, L / 2 - 0.05], [W / 2 - 0.05, L / 2 - 0.05]]) {
+      wallsGroup.add(mesh(new THREE.BoxGeometry(0.12, WALL_H, 0.12), trim, tx, 0.35 + WALL_H / 2, tz));
+    }
+  }
+
   // roof
   const roofGroup = new THREE.Group();
   cabin.add(roofGroup);
@@ -118,6 +127,13 @@
   roofGroup.add(roofPlane(1), roofPlane(-1));
   // ridge cap
   roofGroup.add(mesh(new THREE.BoxGeometry(0.3, 0.12, L + OVER * 2), std(C.roofEdge), 0, 0.35 + RIDGE_H + 0.1, 0));
+  // half-round gutters along both eaves
+  for (const sgn of [-1, 1]) {
+    const gutter = mesh(new THREE.CylinderGeometry(0.055, 0.055, L + OVER * 2, 8, 1, false), std(C.metal, { metalness: 0.5, roughness: 0.4 }));
+    gutter.rotation.x = Math.PI / 2;
+    gutter.position.set(sgn * (W / 2 + OVER - 0.02), 0.35 + EAVE_Y + 0.02, 0);
+    roofGroup.add(gutter);
+  }
   // flue, above the wood stove in the front room
   roofGroup.add(mesh(new THREE.CylinderGeometry(0.12, 0.12, 1.4, 10), std(C.metal, { metalness: 0.5, roughness: 0.45 }), 2.3, 0.35 + RIDGE_H - m2y(2.3) + 0.6, -0.45));
   function m2y(x) { return roofSlope * x; }
@@ -125,13 +141,17 @@
   // solar arrays on both roof planes — south runs along the plot diagonal,
   // so each plane gets meaningful sun through the day
   const solarGroup = new THREE.Group();
+  const panelFaceMat = std(C.panel, {
+    roughness: 0.18, metalness: 0.4, emissive: 0x16273d, emissiveIntensity: 0.35,
+    envMap: envMapTex, envMapIntensity: 1.1
+  });
   function solarArray(sign) {
     const g = new THREE.Group();
     const cols = 7, rows = 2, pw = 1.05, ph = 1.75, gap = 0.09;
     for (let cix = 0; cix < cols; cix++) {
       for (let riy = 0; riy < rows; riy++) {
         const panel = new THREE.Group();
-        panel.add(mesh(new THREE.BoxGeometry(ph, 0.05, pw), std(C.panel, { roughness: 0.3, metalness: 0.15, emissive: 0x16273d, emissiveIntensity: 0.5 }), 0, 0.03, 0));
+        panel.add(mesh(new THREE.BoxGeometry(ph, 0.05, pw), panelFaceMat, 0, 0.03, 0));
         panel.add(mesh(new THREE.BoxGeometry(ph + 0.05, 0.028, pw + 0.05), std(C.panelFrame, { metalness: 0.6, roughness: 0.4 }), 0, 0.005, 0));
         // cell grid lines
         for (let k = 1; k < 6; k++) {
