@@ -70,8 +70,9 @@
     let mx = 0, mz = 0;
     if (walk.keys.f) { mx += fx; mz += fz; }
     if (walk.keys.b) { mx -= fx; mz -= fz; }
-    if (walk.keys.l) { mx -= fz; mz += fx; }
-    if (walk.keys.r) { mx += fz; mz -= fx; }
+    // camera right = (−fz, fx) for heading (fx, fz)
+    if (walk.keys.l) { mx += fz; mz -= fx; }
+    if (walk.keys.r) { mx -= fz; mz += fx; }
     const moving = mx || mz;
     if (moving) {
       const n = Math.hypot(mx, mz);

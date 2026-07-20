@@ -1892,11 +1892,11 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     }
     const specs = [
       // big black in lion cut — deep black mane, dark grey clipped rear
-      { size: 1.0, colors: { coat: 0x1b1815, clip: 0x2b2724, hi: 0x1b1815 }, style: 'lion', bark: 300, x: 7, z: 9 },
+      { size: 1.0, colors: { coat: 0x1b1815, clip: 0x2b2724, hi: 0x1b1815 }, style: 'lion', bark: 195, x: 7, z: 9 },
       // smaller brown in lion cut
-      { size: 0.8, colors: { coat: 0x6a5340, clip: 0x7d684f, hi: 0x6a5340 }, style: 'lion', bark: 480, x: 5.5, z: 10.5 },
+      { size: 0.8, colors: { coat: 0x6a5340, clip: 0x7d684f, hi: 0x6a5340 }, style: 'lion', bark: 330, x: 5.5, z: 10.5 },
       // young big brown in full coat — chocolate with sun-warmed furnishings
-      { size: 1.05, colors: { coat: 0x553d26, clip: 0x553d26, hi: 0x7d5836 }, style: 'full', bark: 390, x: 8.5, z: 11 }
+      { size: 1.05, colors: { coat: 0x553d26, clip: 0x553d26, hi: 0x7d5836 }, style: 'full', bark: 250, x: 8.5, z: 11 }
     ];
     for (let i = 0; i < specs.length; i++) {
       const s = specs[i];
@@ -1956,35 +1956,142 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     d.g.position.z = d.z;
     d.g.rotation.y = d.heading;
   }
+  let barkNoiseBuf = null;
   function bark(d) {
     if (!music.ctx || !state.sound || music.ctx.state !== 'running') return;
     const ctx = music.ctx;
-    const t0 = ctx.currentTime;
-    const n = Math.random() < 0.4 ? 2 : 1;
-    for (let i = 0; i < n; i++) {
-      const f0 = d.barkF * (0.9 + Math.random() * 0.2);
+    if (!barkNoiseBuf) { // shared breath-noise burst
+      barkNoiseBuf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.12), ctx.sampleRate);
+      const ch = barkNoiseBuf.getChannelData(0);
+      for (let i = 0; i < ch.length; i++) ch[i] = (Math.random() * 2 - 1) * (1 - i / ch.length);
+    }
+    const t0 = ctx.currentTime + 0.02;
+    const count = 1 + (Math.random() < 0.45 ? 1 : 0) + (Math.random() < 0.15 ? 1 : 0);
+    for (let i = 0; i < count; i++) {
+      const ts = t0 + i * (0.17 + Math.random() * 0.07);
+      const f0 = d.barkF * (0.92 + Math.random() * 0.16);
+      // glottal source: fast rise then a falling pitch — the "wuh" contour
       const o = ctx.createOscillator();
       o.type = 'sawtooth';
-      o.frequency.setValueAtTime(f0 * 1.7, t0 + i * 0.21);
-      o.frequency.exponentialRampToValueAtTime(f0 * 0.6, t0 + i * 0.21 + 0.09);
-      const bp = ctx.createBiquadFilter();
-      bp.type = 'bandpass';
-      bp.frequency.value = f0 * 1.5;
-      bp.Q.value = 1.1;
-      const g = ctx.createGain();
-      g.gain.setValueAtTime(0.0001, t0 + i * 0.21);
-      g.gain.exponentialRampToValueAtTime(0.07, t0 + i * 0.21 + 0.015);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + i * 0.21 + 0.17);
-      o.connect(bp);
-      bp.connect(g);
-      g.connect(music.master); // past the lowpass, so barks stay crisp
-      o.start(t0 + i * 0.21);
-      o.stop(t0 + i * 0.21 + 0.22);
+      o.frequency.setValueAtTime(f0 * 0.8, ts);
+      o.frequency.exponentialRampToValueAtTime(f0 * 1.5, ts + 0.018);
+      o.frequency.exponentialRampToValueAtTime(f0 * 0.45, ts + 0.13);
+      // two vocal-tract formants in parallel shape the vowel
+      const mixg = ctx.createGain();
+      mixg.gain.value = 1;
+      for (const [mult, q, amt] of [[2.1, 4, 1.0], [4.3, 7, 0.45]]) {
+        const bp = ctx.createBiquadFilter();
+        bp.type = 'bandpass';
+        bp.frequency.value = f0 * mult;
+        bp.Q.value = q;
+        const bg = ctx.createGain();
+        bg.gain.value = amt;
+        o.connect(bp);
+        bp.connect(bg);
+        bg.connect(mixg);
+      }
+      // breath noise on the attack, through the upper formant range
+      const noise = ctx.createBufferSource();
+      noise.buffer = barkNoiseBuf;
+      const nf = ctx.createBiquadFilter();
+      nf.type = 'bandpass';
+      nf.frequency.value = f0 * 5;
+      nf.Q.value = 1.5;
+      const ng = ctx.createGain();
+      ng.gain.setValueAtTime(0.28, ts);
+      ng.gain.exponentialRampToValueAtTime(0.001, ts + 0.06);
+      noise.connect(nf);
+      nf.connect(ng);
+      ng.connect(mixg);
+      // chest resonance underneath
+      const low = ctx.createOscillator();
+      low.type = 'sine';
+      low.frequency.setValueAtTime(f0 * 0.55, ts);
+      low.frequency.exponentialRampToValueAtTime(f0 * 0.4, ts + 0.12);
+      const lg = ctx.createGain();
+      lg.gain.setValueAtTime(0.0001, ts);
+      lg.gain.exponentialRampToValueAtTime(0.05, ts + 0.015);
+      lg.gain.exponentialRampToValueAtTime(0.0001, ts + 0.14);
+      low.connect(lg);
+      lg.connect(music.master);
+      // amplitude envelope: sharp attack, short body, quick decay
+      const env = ctx.createGain();
+      env.gain.setValueAtTime(0.0001, ts);
+      env.gain.exponentialRampToValueAtTime(0.17, ts + 0.012);
+      env.gain.setValueAtTime(0.17, ts + 0.045);
+      env.gain.exponentialRampToValueAtTime(0.0001, ts + 0.19);
+      mixg.connect(env);
+      env.connect(music.master); // past the lowpass, so barks stay crisp
+      o.start(ts);
+      o.stop(ts + 0.22);
+      noise.start(ts);
+      low.start(ts);
+      low.stop(ts + 0.16);
     }
   }
 
   // ---------- generative ambient loop (WebAudio, started by the Sound chip) ----------
-  const music = { ctx: null, master: null, timer: null, on: false };
+  // A slow I–V–vi–IV progression in D carries a pentatonic melody that moves
+  // by random walk with a pull toward the middle register — melodic, never
+  // dissonant, and different on every listen.
+  const music = { ctx: null, master: null, bus: null, timer: null, on: false };
+  const MUS = {
+    beat: 0.82, // ~73 bpm
+    scale: [293.66, 329.63, 369.99, 440.0, 493.88, 587.33, 659.26, 739.99], // D pentatonic, 2 octaves
+    chords: [
+      [146.83, 220.0, 369.99], // D:  D3 A3 F#4
+      [110.0, 164.81, 277.18], // A:  A2 E3 C#4
+      [123.47, 185.0, 293.66], // Bm: B2 F#3 D4
+      [98.0, 146.83, 246.94]   // G:  G2 D3 B3
+    ],
+    bar: 0, mel: 3, lastMel: 3
+  };
+  function tone(freq, ts, attack, dur, peak, type, pan) {
+    const ctx = music.ctx;
+    const o = ctx.createOscillator();
+    o.type = type;
+    o.frequency.value = freq;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, ts);
+    g.gain.linearRampToValueAtTime(peak, ts + attack);
+    g.gain.exponentialRampToValueAtTime(0.0004, ts + dur);
+    o.connect(g);
+    const sp = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+    if (sp) { sp.pan.value = pan; g.connect(sp); sp.connect(music.bus); }
+    else g.connect(music.bus);
+    o.start(ts);
+    o.stop(ts + dur + 0.1);
+  }
+  function scheduleBar() {
+    if (!music.on) return;
+    const ctx = music.ctx;
+    const BAR = MUS.beat * 4;
+    const ts = ctx.currentTime + 0.08;
+    // pad chord, one per bar
+    const chord = MUS.chords[MUS.bar % MUS.chords.length];
+    for (let i = 0; i < chord.length; i++) {
+      tone(chord[i], ts, 1.1, BAR * 1.7, 0.026, 'sine', (i - 1) * 0.3);
+    }
+    // melody: eighth-note grid, random walk with a homeward pull
+    for (let b = 0; b < 4; b++) {
+      for (const half of [0, 0.5]) {
+        const first = b === 0 && half === 0;
+        if (!first && Math.random() > (half ? 0.32 : 0.58)) continue;
+        let step = [-2, -1, -1, 1, 1, 2][Math.floor(Math.random() * 6)];
+        if (MUS.mel >= 6 && step > 0) step = -step; // drift back toward the middle
+        if (MUS.mel <= 1 && step < 0) step = -step;
+        if (first && Math.random() < 0.5) step = 0;  // often restate the anchor
+        MUS.lastMel = MUS.mel;
+        MUS.mel = Math.max(0, Math.min(MUS.scale.length - 1, MUS.mel + step));
+        const f = MUS.scale[MUS.mel];
+        const at = ts + (b + half) * MUS.beat;
+        tone(f, at, 0.05, 2.6, 0.06, 'triangle', Math.random() * 0.8 - 0.4);
+        if (Math.random() < 0.22) tone(f * 2, at, 0.04, 2.0, 0.016, 'sine', Math.random() * 0.8 - 0.4); // sparkle
+      }
+    }
+    MUS.bar++;
+    music.timer = setTimeout(scheduleBar, BAR * 1000 - 60);
+  }
   function startMusic() {
     try {
       if (!music.ctx) {
@@ -1993,7 +2100,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         master.gain.value = 0;
         const lp = ctx.createBiquadFilter();
         lp.type = 'lowpass';
-        lp.frequency.value = 1600;
+        lp.frequency.value = 1700;
         lp.connect(master);
         master.connect(ctx.destination);
         const bus = ctx.createGain();
@@ -2001,18 +2108,18 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         bus.connect(lp);
         // gentle echo for space
         const delay = ctx.createDelay(2);
-        delay.delayTime.value = 0.58;
+        delay.delayTime.value = MUS.beat * 0.75; // dotted-eighth echo, in time with the pulse
         const fb = ctx.createGain();
-        fb.gain.value = 0.32;
+        fb.gain.value = 0.3;
         const wet = ctx.createGain();
-        wet.gain.value = 0.38;
+        wet.gain.value = 0.34;
         bus.connect(delay);
         delay.connect(fb);
         fb.connect(delay);
         delay.connect(wet);
         wet.connect(lp);
-        // low drone: root + fifth
-        for (const [f, g0] of [[73.42, 0.045], [110.0, 0.028]]) {
+        // low drone: root + fifth, quiet under the chords
+        for (const [f, g0] of [[73.42, 0.03], [110.0, 0.018]]) {
           const o = ctx.createOscillator();
           o.type = 'sine';
           o.frequency.value = f;
@@ -2027,33 +2134,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       music.ctx.resume();
       music.master.gain.cancelScheduledValues(music.ctx.currentTime);
       music.master.gain.linearRampToValueAtTime(0.9, music.ctx.currentTime + 1.5);
-      // D-major pentatonic across two octaves — never dissonant
-      const POOL_NOTES = [293.66, 329.63, 369.99, 440.0, 493.88, 587.33, 659.26, 739.99];
-      const note = () => {
-        if (!music.on) return;
-        const ctx = music.ctx;
-        const n = 1 + (Math.random() < 0.3 ? 1 : 0); // occasionally a dyad
-        for (let i = 0; i < n; i++) {
-          const o = ctx.createOscillator();
-          o.type = Math.random() < 0.7 ? 'sine' : 'triangle';
-          o.frequency.value = POOL_NOTES[Math.floor(Math.random() * POOL_NOTES.length)];
-          const g = ctx.createGain();
-          const pan = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
-          const peak = 0.04 + Math.random() * 0.05;
-          const t0 = ctx.currentTime + i * 0.25;
-          g.gain.setValueAtTime(0, t0);
-          g.gain.linearRampToValueAtTime(peak, t0 + 1.2 + Math.random() * 1.3);
-          g.gain.exponentialRampToValueAtTime(0.0004, t0 + 5 + Math.random() * 3);
-          o.connect(g);
-          if (pan) { pan.pan.value = Math.random() * 1.4 - 0.7; g.connect(pan); pan.connect(music.bus); }
-          else g.connect(music.bus);
-          o.start(t0);
-          o.stop(t0 + 9);
-        }
-        music.timer = setTimeout(note, 1400 + Math.random() * 2600);
-      };
       music.on = true;
-      note();
+      scheduleBar();
     } catch (err) { /* audio unavailable — leave the scene silent */ }
   }
   function stopMusic() {
@@ -2586,8 +2668,9 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     let mx = 0, mz = 0;
     if (walk.keys.f) { mx += fx; mz += fz; }
     if (walk.keys.b) { mx -= fx; mz -= fz; }
-    if (walk.keys.l) { mx -= fz; mz += fx; }
-    if (walk.keys.r) { mx += fz; mz -= fx; }
+    // camera right = (−fz, fx) for heading (fx, fz)
+    if (walk.keys.l) { mx += fz; mz -= fx; }
+    if (walk.keys.r) { mx -= fz; mz += fx; }
     const moving = mx || mz;
     if (moving) {
       const n = Math.hypot(mx, mz);

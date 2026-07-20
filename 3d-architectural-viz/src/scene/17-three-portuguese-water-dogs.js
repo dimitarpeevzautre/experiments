@@ -137,11 +137,11 @@
     }
     const specs = [
       // big black in lion cut — deep black mane, dark grey clipped rear
-      { size: 1.0, colors: { coat: 0x1b1815, clip: 0x2b2724, hi: 0x1b1815 }, style: 'lion', bark: 300, x: 7, z: 9 },
+      { size: 1.0, colors: { coat: 0x1b1815, clip: 0x2b2724, hi: 0x1b1815 }, style: 'lion', bark: 195, x: 7, z: 9 },
       // smaller brown in lion cut
-      { size: 0.8, colors: { coat: 0x6a5340, clip: 0x7d684f, hi: 0x6a5340 }, style: 'lion', bark: 480, x: 5.5, z: 10.5 },
+      { size: 0.8, colors: { coat: 0x6a5340, clip: 0x7d684f, hi: 0x6a5340 }, style: 'lion', bark: 330, x: 5.5, z: 10.5 },
       // young big brown in full coat — chocolate with sun-warmed furnishings
-      { size: 1.05, colors: { coat: 0x553d26, clip: 0x553d26, hi: 0x7d5836 }, style: 'full', bark: 390, x: 8.5, z: 11 }
+      { size: 1.05, colors: { coat: 0x553d26, clip: 0x553d26, hi: 0x7d5836 }, style: 'full', bark: 250, x: 8.5, z: 11 }
     ];
     for (let i = 0; i < specs.length; i++) {
       const s = specs[i];
@@ -201,29 +201,76 @@
     d.g.position.z = d.z;
     d.g.rotation.y = d.heading;
   }
+  let barkNoiseBuf = null;
   function bark(d) {
     if (!music.ctx || !state.sound || music.ctx.state !== 'running') return;
     const ctx = music.ctx;
-    const t0 = ctx.currentTime;
-    const n = Math.random() < 0.4 ? 2 : 1;
-    for (let i = 0; i < n; i++) {
-      const f0 = d.barkF * (0.9 + Math.random() * 0.2);
+    if (!barkNoiseBuf) { // shared breath-noise burst
+      barkNoiseBuf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.12), ctx.sampleRate);
+      const ch = barkNoiseBuf.getChannelData(0);
+      for (let i = 0; i < ch.length; i++) ch[i] = (Math.random() * 2 - 1) * (1 - i / ch.length);
+    }
+    const t0 = ctx.currentTime + 0.02;
+    const count = 1 + (Math.random() < 0.45 ? 1 : 0) + (Math.random() < 0.15 ? 1 : 0);
+    for (let i = 0; i < count; i++) {
+      const ts = t0 + i * (0.17 + Math.random() * 0.07);
+      const f0 = d.barkF * (0.92 + Math.random() * 0.16);
+      // glottal source: fast rise then a falling pitch — the "wuh" contour
       const o = ctx.createOscillator();
       o.type = 'sawtooth';
-      o.frequency.setValueAtTime(f0 * 1.7, t0 + i * 0.21);
-      o.frequency.exponentialRampToValueAtTime(f0 * 0.6, t0 + i * 0.21 + 0.09);
-      const bp = ctx.createBiquadFilter();
-      bp.type = 'bandpass';
-      bp.frequency.value = f0 * 1.5;
-      bp.Q.value = 1.1;
-      const g = ctx.createGain();
-      g.gain.setValueAtTime(0.0001, t0 + i * 0.21);
-      g.gain.exponentialRampToValueAtTime(0.07, t0 + i * 0.21 + 0.015);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + i * 0.21 + 0.17);
-      o.connect(bp);
-      bp.connect(g);
-      g.connect(music.master); // past the lowpass, so barks stay crisp
-      o.start(t0 + i * 0.21);
-      o.stop(t0 + i * 0.21 + 0.22);
+      o.frequency.setValueAtTime(f0 * 0.8, ts);
+      o.frequency.exponentialRampToValueAtTime(f0 * 1.5, ts + 0.018);
+      o.frequency.exponentialRampToValueAtTime(f0 * 0.45, ts + 0.13);
+      // two vocal-tract formants in parallel shape the vowel
+      const mixg = ctx.createGain();
+      mixg.gain.value = 1;
+      for (const [mult, q, amt] of [[2.1, 4, 1.0], [4.3, 7, 0.45]]) {
+        const bp = ctx.createBiquadFilter();
+        bp.type = 'bandpass';
+        bp.frequency.value = f0 * mult;
+        bp.Q.value = q;
+        const bg = ctx.createGain();
+        bg.gain.value = amt;
+        o.connect(bp);
+        bp.connect(bg);
+        bg.connect(mixg);
+      }
+      // breath noise on the attack, through the upper formant range
+      const noise = ctx.createBufferSource();
+      noise.buffer = barkNoiseBuf;
+      const nf = ctx.createBiquadFilter();
+      nf.type = 'bandpass';
+      nf.frequency.value = f0 * 5;
+      nf.Q.value = 1.5;
+      const ng = ctx.createGain();
+      ng.gain.setValueAtTime(0.28, ts);
+      ng.gain.exponentialRampToValueAtTime(0.001, ts + 0.06);
+      noise.connect(nf);
+      nf.connect(ng);
+      ng.connect(mixg);
+      // chest resonance underneath
+      const low = ctx.createOscillator();
+      low.type = 'sine';
+      low.frequency.setValueAtTime(f0 * 0.55, ts);
+      low.frequency.exponentialRampToValueAtTime(f0 * 0.4, ts + 0.12);
+      const lg = ctx.createGain();
+      lg.gain.setValueAtTime(0.0001, ts);
+      lg.gain.exponentialRampToValueAtTime(0.05, ts + 0.015);
+      lg.gain.exponentialRampToValueAtTime(0.0001, ts + 0.14);
+      low.connect(lg);
+      lg.connect(music.master);
+      // amplitude envelope: sharp attack, short body, quick decay
+      const env = ctx.createGain();
+      env.gain.setValueAtTime(0.0001, ts);
+      env.gain.exponentialRampToValueAtTime(0.17, ts + 0.012);
+      env.gain.setValueAtTime(0.17, ts + 0.045);
+      env.gain.exponentialRampToValueAtTime(0.0001, ts + 0.19);
+      mixg.connect(env);
+      env.connect(music.master); // past the lowpass, so barks stay crisp
+      o.start(ts);
+      o.stop(ts + 0.22);
+      noise.start(ts);
+      low.start(ts);
+      low.stop(ts + 0.16);
     }
   }
