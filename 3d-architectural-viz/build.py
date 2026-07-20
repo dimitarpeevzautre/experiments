@@ -23,6 +23,14 @@ project = (ROOT / "src" / "project.js").read_text()
 budget = (ROOT / "src" / "budget.json").read_text().strip()
 project = "window.BUDGET = " + budget + ";\n" + project
 
+# family photo for the frame above the sofa — drop any JPEG at src/photo.jpg
+photo_path = ROOT / "src" / "photo.jpg"
+if photo_path.exists():
+    import base64
+    photo = "window.FAMILY_PHOTO = 'data:image/jpeg;base64," + base64.b64encode(photo_path.read_bytes()).decode() + "';"
+else:
+    photo = "window.FAMILY_PHOTO = null;"
+
 # the UMD build's deprecation warning is noise in a deliberately pinned vendor copy
 three = three.replace(
     "console.warn('Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation'),",
@@ -30,7 +38,12 @@ three = three.replace(
     1,
 )
 
-body = page.replace("{{THREE}}", three).replace("{{SCENE}}", scene).replace("{{PROJECT}}", project)
+body = (
+    page.replace("{{THREE}}", three)
+    .replace("{{PHOTO}}", photo)
+    .replace("{{SCENE}}", scene)
+    .replace("{{PROJECT}}", project)
+)
 
 full = (
     "<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n"
