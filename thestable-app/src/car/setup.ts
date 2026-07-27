@@ -1,3 +1,4 @@
+import { AppRegistry } from 'react-native';
 import { CarPlay, ListTemplate } from 'react-native-carplay';
 
 import { CATEGORY_ICONS } from '@/core/attractions';
@@ -133,6 +134,10 @@ function onDisconnect() {
 }
 
 export function setupCarApp(): void {
+  // The Android Auto service boots a headless JS app of this name; our UI is
+  // pure templates, so an empty root component is all it needs.
+  AppRegistry.registerComponent('AndroidAuto', () => () => null);
+
   CarPlay.registerOnConnect(onConnect);
   CarPlay.registerOnDisconnect(onDisconnect);
   if (CarPlay.connected) onConnect();
