@@ -25,6 +25,7 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="drive" options={{ title: 'Drive mode', presentation: 'fullScreenModal' }} />
         <Stack.Screen name="booking/[id]" options={{ title: 'Booking' }} />
+        <Stack.Screen name="trip/[tripId]" options={{ title: 'Trip' }} />
         <Stack.Screen name="camper/[topicId]" options={{ title: 'Guide' }} />
         <Stack.Screen name="checklist/[checklistId]" options={{ title: 'Checklist' }} />
         <Stack.Screen name="attraction/[attractionId]" options={{ title: 'Attraction' }} />

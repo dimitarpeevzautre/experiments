@@ -12,6 +12,7 @@ Built with **Expo (React Native) + TypeScript**, one codebase for iOS, Android a
 | --- | --- |
 | **Home** | Your current/next trip at a glance, quick actions (drive mode, checklists, SOS) |
 | **Bookings** | All bookings grouped by phase — on the road, upcoming, past — with price breakdowns |
+| **Trips** | Curated multi-day road trips (Rila & Pirin, Balkan Heartland, Southern Black Sea) mixing sights, restaurants, campsites and wild-camping overnights. Start one and check off stops as you go — progress is persisted, the next stop is highlighted, and the active trip surfaces on Home. |
 | **Camper** | Interactive checklists (departure / camp setup / return, persisted locally) and an operating guide: water, electrics, gas, toilet, heating, driving in Bulgaria, troubleshooting |
 | **Explore** | 19 hand-picked Bulgarian attractions with categories, camper parking notes and listenable stories |
 | **Drive mode** | Start it when you set off: the app watches your GPS position + heading and narrates attractions you're near or heading towards via text-to-speech — each story told once per trip. Includes a 60× **demo drive** (Sofia → Veliko Tarnovo) so you can try it from the sofa. |
@@ -45,6 +46,7 @@ src/
     geo.ts         haversine distance, bearings, heading math
     narration.ts   picks what to narrate next (near / ahead-in-cone), once per trip
     booking.ts     booking phases, nights, pricing
+    trips.ts       multi-day itineraries: progress, next stop, day derivation
     checklists.ts  checklist state helpers
   data/        seed content: attractions + narration scripts, fleet, guide, checklists, demo route
   services/    thin wrappers: booking API (mock), TTS narrator, checklist persistence

@@ -1,9 +1,10 @@
-import { Link, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { Link, useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Card } from '@/components/card';
 import { Pill } from '@/components/pill';
+import { ProgressBar } from '@/components/progress-bar';
 import { Screen } from '@/components/screen';
 import { ThemedText } from '@/components/themed-text';
 import {
@@ -15,14 +16,28 @@ import {
   type Booking,
 } from '@/core/booking';
 import { Spacing } from '@/constants/theme';
+import { currentDayNumber, nextStop, tripProgress, STOP_TYPE_META } from '@/core/trips';
 import { getCamper } from '@/data/fleet';
+import { getTrip } from '@/data/trips';
 import { fetchBookings } from '@/services/bookings';
+import { loadActiveTrip, type ActiveTripState } from '@/services/tripStore';
 
 export default function HomeScreen() {
   const router = useRouter();
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [activeTrip, setActiveTrip] = useState<ActiveTripState | null>(null);
   const today = todayISO();
+
+  useFocusEffect(
+    useCallback(() => {
+      let alive = true;
+      loadActiveTrip().then((state) => alive && setActiveTrip(state));
+      return () => {
+        alive = false;
+      };
+    }, []),
+  );
 
   useEffect(() => {
     let alive = true;
@@ -78,6 +93,28 @@ export default function HomeScreen() {
           </ThemedText>
         </Card>
       )}
+
+      {activeTrip &&
+        (() => {
+          const trip = getTrip(activeTrip.tripId);
+          if (!trip) return null;
+          const progress = tripProgress(trip, activeTrip.completedStopIds);
+          const next = nextStop(trip, activeTrip.completedStopIds);
+          return (
+            <Card onPress={() => router.push(`/trip/${trip.id}`)}>
+              <Pill label={`Trip · Day ${currentDayNumber(trip, activeTrip.completedStopIds)} of ${trip.days.length}`} tone="primary" />
+              <ThemedText type="smallBold">
+                {trip.icon} {trip.title}
+              </ThemedText>
+              <ProgressBar done={progress.done} total={progress.total} />
+              <ThemedText type="small" themeColor="textSecondary">
+                {next
+                  ? `Next stop: ${STOP_TYPE_META[next.stop.type].icon} ${next.stop.name}`
+                  : 'All stops done — end the trip when you are back 🎉'}
+              </ThemedText>
+            </Card>
+          );
+        })()}
 
       <ThemedText type="subtitle">Quick actions</ThemedText>
       <View style={styles.grid}>

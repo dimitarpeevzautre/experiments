@@ -37,6 +37,17 @@ the built-in simulator (`data/routes.ts`, 60× time compression), and speaks the
 `services/narrator.ts` (expo-speech). Only one story plays at a time; a new fix while speaking
 just refreshes the "within reach" list.
 
+## Multi-day trips
+
+`core/trips.ts` models a curated itinerary (`TripPlan`) as days of typed stops — attraction,
+restaurant, campsite, wild-camping, scenic — with pure helpers for progress, the next stop, and
+the current day. Guests start a trip (one active at a time, persisted by `services/tripStore.ts`)
+and tick stops off; attraction stops deep-link into the narration catalogue via `attractionId`, so
+drive mode tells their stories on the way. Wild-camping stops automatically surface a
+leave-no-trace/legal note. Content lives in `data/trips.ts` and moves to the same CMS as
+attractions; a natural v1 upgrade is generating trips dynamically (dates, season, interests) and
+snapping stop order to real routing.
+
 ## Booking data
 
 `services/bookings.ts` is the single seam to the backend. It currently resolves seed data with
@@ -76,13 +87,15 @@ audio/output layer, not the logic.
 - [ ] CarPlay audio app (entitlement application → `react-native-carplay`)
 - [ ] Background location so drive mode works under a foregrounded nav app
 - [ ] Offline attraction map + camper-friendly parking/campsite layer
+- [ ] Trip routing on a real road network (ETA per leg, "resume from where I am"), map view of the day
+- [ ] Restaurant/campsite data verified & maintained in the CMS (opening hours, prices, booking links)
 - [ ] Damage report with photos on pickup/return (ties into the return checklist)
 - [ ] Push notifications: pickup reminders, weather on your route
 
 ## Testing
 
-- `npm test` — 36 unit tests over the domain core (geo math, narration selection, booking
-  derivations, checklist state).
+- `npm test` — 47 unit tests over the domain core (geo math, narration selection, booking
+  derivations, trip progress/next-stop, checklist state).
 - `npm run typecheck` / `npm run lint` — strict TS + expo eslint config.
 - Web smoke: `npx expo export --platform web` renders every route; the demo drive was verified
   headlessly (simulation ticks → narration fires → played-count increments).
