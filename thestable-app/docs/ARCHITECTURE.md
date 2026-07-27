@@ -55,25 +55,41 @@ fake latency; production swaps its internals for the thestable.bg API (auth toke
 endpoints) without touching screens. Booking *derivations* (phase, nights, totals, "primary"
 booking) are pure functions in `core/booking.ts`, so server and app can share test vectors.
 
-## CarPlay / Android Auto plan
+## CarPlay / Android Auto
 
-Today (v0): narration is ordinary phone audio — with the phone connected via Bluetooth/USB it
-plays through the car speakers, and `UIBackgroundModes: ["audio"]` (iOS) keeps it alive with the
-screen off. This already delivers the core "listen while driving" experience with zero native code.
+The app has a real car screen, built on `react-native-carplay` (Google's Android for Cars App
+Library on Android, CarPlay templates on iOS) — the same JS drives both:
 
-Next (v1): proper car-audio citizenship, which requires a dev client / prebuild (out of Expo Go):
+- `src/services/driveSession.ts` — the narration session is a framework-free singleton; the phone
+  screen (`use-drive` via `useSyncExternalStore`) and the car template observe the same instance,
+  so starting a drive on either surface updates both. The session outlives any screen.
+- `src/car/setup.ts` — a single car-safe list template: now-playing row (tap = skip),
+  start/stop GPS narration, start/stop demo drive, then the attractions within reach
+  (tap = play that story now). Registered at app start on native platforms only.
+- `plugins/withAndroidAuto.js` — config plugin adding the `automotive_app_desc.xml` +
+  `com.google.android.gms.car.application` meta-data; the `CarAppService` itself is merged in
+  from the library's manifest (navigation category).
+
+**Android Auto — trying it**: the APK works on a real head unit or the Desktop Head Unit (DHU).
+Because it isn't distributed through Google Play yet, enable *Developer settings → Unknown
+sources* in the Android Auto app on the phone. Audio (TTS) routes through the car speakers
+automatically.
+
+**Apple CarPlay — status**: the JS template code is shared and ready, but shipping the CarPlay
+scene needs (a) an Apple-granted CarPlay entitlement (apply at developer.apple.com), and (b) the
+iOS scene-delegate setup from the react-native-carplay docs (a small config plugin once the
+entitlement exists) — plus a macOS build machine. Until then iOS gets plain background audio.
+
+Remaining upgrades for full car-audio citizenship:
 
 1. Replace `expo-speech` output with pre-rendered audio files (studio or server-side TTS) played
-   through **`react-native-track-player`**. That gives us:
-   - a real media session: now-playing metadata, play/pause/skip from steering wheel and car UI;
-   - **Android Auto** media browsing (the app appears as an audio source; attractions/routes
-     exposed as a browse tree via the `onGetChildren` media-library callbacks);
-   - lock-screen and CarPlay "Now Playing" control for free.
-2. **CarPlay app** via `react-native-carplay` (requires a CarPlay audio-app entitlement from
-   Apple): list template with "Nearby stories" / "My route", driven by the same `TripNarrator`.
-3. Location in background ("narrate even when the app is minimised") via
-   `expo-location` background mode + foreground service on Android — needed so stories trigger
-   while another app (e.g. the navigation app) is in front.
+   through **`react-native-track-player`**: a real media session with now-playing metadata and
+   play/pause/skip from the steering wheel, plus lock-screen controls.
+2. Location in background ("narrate even when the app is minimised") via `expo-location`
+   background mode + a foreground service on Android — needed so stories trigger while another
+   app (e.g. navigation) is in front. Today the car screen keeps the session alive while Android
+   Auto is connected.
+3. iOS CarPlay scene + entitlement (see status above).
 
 The selection engine (`core/narration.ts`) is already UI-free precisely so v1 only swaps the
 audio/output layer, not the logic.

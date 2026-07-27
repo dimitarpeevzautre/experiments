@@ -1,7 +1,16 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
-import { useColorScheme } from 'react-native';
+import { Platform, useColorScheme } from 'react-native';
 
 import { Colors } from '@/constants/theme';
+
+if (Platform.OS === 'android' || Platform.OS === 'ios') {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy: react-native-carplay must not evaluate on web
+    require('@/car/setup').setupCarApp();
+  } catch (error) {
+    console.warn('Car app integration unavailable:', error);
+  }
+}
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();

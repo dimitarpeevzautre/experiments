@@ -17,10 +17,11 @@ Built with **Expo (React Native) + TypeScript**, one codebase for iOS, Android a
 | **Explore** | 19 hand-picked Bulgarian attractions with categories, camper parking notes and listenable stories |
 | **Drive mode** | Start it when you set off: the app watches your GPS position + heading and narrates attractions you're near or heading towards via text-to-speech — each story told once per trip. Includes a 60× **demo drive** (Sofia → Veliko Tarnovo) so you can try it from the sofa. |
 
-In-car audio today works the "background audio" way: phone connected over Bluetooth / Android Auto
-/ CarPlay, narration plays through the car speakers. Full CarPlay/Android Auto *apps* (on-screen
-templates, media browsing) are the next step — the plan lives in
-[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+**On the car screen**: the app ships an Android Auto templated screen (via `react-native-carplay`)
+— start/stop narration, the demo drive, and a tap-to-play list of attractions within reach, all in
+sync with the phone UI through a shared drive session. Sideloaded builds need *Unknown sources*
+enabled in Android Auto's developer settings. The same template code is CarPlay-ready; iOS needs
+an Apple CarPlay entitlement + scene setup (see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)).
 
 ## Getting started
 

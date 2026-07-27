@@ -103,6 +103,11 @@ export class TripNarrator {
     return best;
   }
 
+  /** Mark an attraction played out-of-band (e.g. manually selected in the car UI). */
+  markPlayed(attractionId: string): void {
+    this.played.add(attractionId);
+  }
+
   reset(): void {
     this.played.clear();
   }
