@@ -78,7 +78,7 @@ function dispatch(rt, o = {}) {
   const session = o.session || rt.sessions.getOrCreate(dwsid && dwsid.value);
   const Request = rt.dw.get('system/Request');
   const Response = rt.dw.get('system/Response');
-  const request = new Request({ method, path: urlPath, query: qs, params, headers, cookies, body: o.body == null ? null : (Buffer.isBuffer(o.body) ? o.body.toString('utf8') : String(o.body)), locale, session, host: headers.host || `${rt.config.hostname}${rt.config.port && rt.config.port !== 80 ? ':' + rt.config.port : ''}`, protocol: o.protocol || (headers['x-forwarded-proto'] || 'http'), remoteAddress: o.remoteAddress, include: !!o.include, controller: route.controller, action: route.action });
+  const request = new Request({ method, path: urlPath, query: qs, params, headers, cookies, body: o.body == null ? null : (Buffer.isBuffer(o.body) ? o.body.toString('utf8') : String(o.body)), locale, session, host: headers.host || `${rt.config.hostname}${rt.config.port && rt.config.port !== 80 ? ':' + rt.config.port : ''}`, protocol: o.protocol || headers['x-forwarded-proto'] || (rt.config.secure === false ? 'http' : 'https'), remoteAddress: o.remoteAddress, include: !!o.include, controller: route.controller, action: route.action });
   const response = new Response();
   const ctx = { request, response, session, get customer() { return session.getCustomer(); }, set customer(c) { session._setCustomer(c); } };
 

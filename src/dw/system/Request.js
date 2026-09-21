@@ -35,7 +35,7 @@ class Request {
   getHttpHost() { return this._o.host || this._headers.host || 'localhost'; }
   getHttpProtocol() { return this._o.protocol || 'http'; }
   isHttpSecure() { return this.getHttpProtocol() === 'https'; }
-  getHttpHeaders() { const HashMap = require('../util/HashMap'); const m = new HashMap(this._headers); return m; }
+  getHttpHeaders() { const HashMap = require('../util/HashMap'); const m = new HashMap(this._headers); const get = m.get.bind(m); m.get = (k) => get(String(k).toLowerCase()); const has = m.containsKey.bind(m); m.containsKey = (k) => has(String(k).toLowerCase()); return m; }
   getHttpHeader(name) { return this._headers[String(name).toLowerCase()] || null; }
   getHttpCookies() { return this._cookies; }
   getHttpParameterMap() { return this._params; }

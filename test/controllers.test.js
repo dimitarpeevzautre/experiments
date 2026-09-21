@@ -23,6 +23,9 @@ test('SFRA-style controllers: render, extend/append/prepend, superModule, remote
   r = c.get('/Home-Show'); assert.equal(r.status, 200);
   r = c.get('/s/RefArch/en_US/Home-Show'); assert.equal(r.status, 200); assert.match(r.text, /class="locale">en_US/);
   r = c.get('/'); assert.equal(r.status, 200);
+  r = c.get('Home-Show', { headers: { 'x-forwarded-proto': 'http' } }); assert.equal(r.status, 403); // SFRA https middleware
+  const insecure = makeRuntime({ secure: false }); assert.equal(client(insecure).get('Home-Show').status, 403); assert.equal(client(insecure).get('Home-Json').status, 200);
+  assert.equal(rt.dispatch({ url: '/Home-Json', headers: { 'X-Requested-With': 'XMLHttpRequest' } }).request.getHttpHeaders().get('X-Requested-With'), 'XMLHttpRequest');
 });
 
 test('errors and 404s go through the Error controller; non-public actions are hidden', () => {

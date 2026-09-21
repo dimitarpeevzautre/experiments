@@ -22,6 +22,7 @@ const DEFAULTS = {
   strictCustomAttributes: false,
   allowNodeModules: false,
   instanceType: 'development',
+  secure: true,                     // storefront requests are HTTPS on the platform; set false to emulate plain HTTP
 };
 
 class Runtime {

@@ -11,7 +11,7 @@ function createServer(rt, opts = {}) {
       const body = Buffer.concat(chunks);
       let result;
       try {
-        result = dispatch(rt, { method: req.method, url: req.url, headers: req.headers, body, remoteAddress: req.socket.remoteAddress, protocol: req.socket.encrypted ? 'https' : 'http' });
+        result = dispatch(rt, { method: req.method, url: req.url, headers: req.headers, body, remoteAddress: req.socket.remoteAddress, protocol: req.socket.encrypted ? 'https' : (rt.config.secure === false ? 'http' : undefined) });
       } catch (e) {
         rt.log('error', 'server', e.stack || String(e));
         result = { status: 500, headers: {}, body: 'Internal Server Error', contentType: 'text/plain', cookies: [] };
