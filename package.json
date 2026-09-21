@@ -1,0 +1,18 @@
+{
+  "name": "sfcc-runtime",
+  "version": "0.1.0",
+  "description": "A local runtime that executes Salesforce Commerce Cloud (SFCC / Demandware) cartridge code outside the platform: controllers, scripts, ISML templates, hooks, jobs, pipelines and the dw.* API.",
+  "license": "MIT",
+  "type": "commonjs",
+  "bin": {
+    "sfcc-run": "bin/sfcc-run.js"
+  },
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test test/",
+    "start": "node bin/sfcc-run.js serve"
+  }
+}
