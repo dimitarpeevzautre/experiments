@@ -1,0 +1,1 @@
+{ "001": { "displayName": "Ground", "default": true, "cost": [ { "threshold": 0, "cost": 5.99 }, { "threshold": 100, "cost": 0 } ], "taxClassID": "standard" }, "002": { "displayName": "Express", "cost": 15, "countries": ["US"] } }

@@ -1,0 +1,19 @@
+/**
+ * Legacy Rhino-style script with type annotations, importPackage and for each.
+ */
+importPackage( dw.system );
+importPackage( dw.util );
+importScript( "helpers/legacyInclude.ds" );
+
+function execute( args : PipelineDictionary ) : Number
+{
+    var list : ArrayList = new ArrayList();
+    var total : Number = 0;
+    list.add1( 1 ); list.add1( 2 ); list.add1( 3 );
+    for each ( var n : Number in list ) { total += n; }
+    args.Total = total + includedBonus();
+    Logger.getLogger( 'legacy' ).info( 'total {0}', args.Total );
+    if ( empty( args.Fail ) ) return PIPELET_NEXT;
+    return PIPELET_ERROR;
+}
+module.exports = { execute: execute };

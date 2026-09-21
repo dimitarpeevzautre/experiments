@@ -1,0 +1,1 @@
+<h1>${pdict.Title}</h1><p>total=${pdict.Total} doubled=${pdict.Doubled}</p>

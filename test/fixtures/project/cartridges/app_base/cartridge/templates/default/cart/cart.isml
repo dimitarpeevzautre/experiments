@@ -1,0 +1,5 @@
+<isif condition="${!pdict.basket}"><p class="empty">${Resource.msg('cart.empty', 'cart', 'Your cart is empty')}</p>
+<iselse/>
+<ul><isloop items="${pdict.basket.productLineItems}" var="pli" status="s"><li class="item ${s.odd ? 'odd' : 'even'}">${pli.productName} x <isprint value="${pli.quantity}"/> = <isprint value="${pli.adjustedPrice}"/></li></isloop></ul>
+<p class="total"><isprint value="${pdict.basket.totalGrossPrice}"/></p>
+</isif>

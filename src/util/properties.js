@@ -5,14 +5,14 @@ function parseProperties(text) {
   const lines = text.split(/\r?\n/);
   let pending = '';
   for (let raw of lines) {
-    let line = pending + raw;
+    let line = pending !== '' ? pending + raw.replace(/^\s+/, '') : raw;
     pending = '';
     const trimmed = line.replace(/^\s+/, '');
     if (!trimmed || trimmed[0] === '#' || trimmed[0] === '!') continue;
     // continuation
     let bs = 0;
     for (let i = line.length - 1; i >= 0 && line[i] === '\\'; i--) bs++;
-    if (bs % 2 === 1) { pending = line.slice(0, -1); continue; }
+    if (bs % 2 === 1) { pending = line.slice(0, -1) || ' '; if (pending === ' ') pending = line.slice(0, -1); continue; }
     let i = 0; let key = '';
     const s = trimmed;
     while (i < s.length) {

@@ -1,0 +1,11 @@
+<iscontent type="text/html" charset="UTF-8" compact="true"/>
+<isdecorate template="common/layout/page">
+  <h1 class="site">${pdict.siteName}</h1>
+  <p class="greeting">${pdict.greeting}</p>
+  <p class="price">${pdict.price} (${pdict.helperLabel})</p>
+  <p class="locale">${pdict.locale}</p>
+  <a class="pdp" href="${pdict.productUrl}">product</a>
+  <isif condition="${pdict.currentCustomer.profile}"><p class="user">Hello ${pdict.currentCustomer.profile.firstName}</p><iselse/><p class="user">Hello guest</p></isif>
+  <isinclude url="${URLUtils.url('Cart-MiniCart')}"/>
+  <isinclude template="common/footer"/>
+</isdecorate>

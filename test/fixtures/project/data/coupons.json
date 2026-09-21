@@ -1,0 +1,1 @@
+{ "FREESHIP": { "type": "single_code", "codes": ["FREESHIP"], "enabled": true, "redemptionLimitPerCode": 100 }, "DISABLED": { "codes": ["DISABLED"], "enabled": false }, "SYS": { "type": "system_codes", "codePrefix": "SYS-", "enabled": true } }

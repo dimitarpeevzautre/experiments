@@ -80,8 +80,8 @@ class Calendar {
   }
   add(field, amount) {
     switch (field) {
-      case F.YEAR: this.set(F.YEAR, this.get(F.YEAR) + amount); return;
-      case F.MONTH: { const p = this._parts(); p.month += amount; this._fromParts(p); return; }
+      case F.YEAR: { const p = this._parts(); p.year += amount; p.day = Math.min(p.day, daysIn(p.year, p.month)); this._fromParts(p); return; }
+      case F.MONTH: { const p = this._parts(); const total = p.year * 12 + p.month + amount; p.year = Math.floor(total / 12); p.month = ((total % 12) + 12) % 12; p.day = Math.min(p.day, daysIn(p.year, p.month)); this._fromParts(p); return; }
       case F.DAY_OF_MONTH: case F.DAY_OF_YEAR: case F.DAY_OF_WEEK: case F.DATE: { const p = this._parts(); p.day += amount; this._fromParts(p); return; }
       case F.WEEK_OF_YEAR: case F.WEEK_OF_MONTH: { const p = this._parts(); p.day += amount * 7; this._fromParts(p); return; }
       case F.HOUR: case F.HOUR_OF_DAY: this._d = new Date(this._d.getTime() + amount * 3600000); return;
@@ -191,6 +191,7 @@ class Calendar {
 }
 Object.assign(Calendar, F, DAYS, MONTHS, { SHORT_DATE_PATTERN: 0, LONG_DATE_PATTERN: 1, TIME_PATTERN: 2, INPUT_DATE_PATTERN: 3, INPUT_TIME_PATTERN: 4, INPUT_DATE_TIME_PATTERN: 5, SHORT_DATE_TIME_PATTERN: 7, LONG_DATE_TIME_PATTERN: 8 });
 
+function daysIn(y, m) { return new Date(Date.UTC(y, m + 1, 0)).getUTCDate(); }
 const dtfCache = new Map();
 function dateParts(date, tz) {
   if (!tz || tz === 'UTC' || tz === 'GMT') {

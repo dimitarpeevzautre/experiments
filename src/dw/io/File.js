@@ -39,8 +39,8 @@ class File {
   copyTo(other) { fs.mkdirSync(path.dirname(other._p), { recursive: true }); fs.copyFileSync(this._p, other._p); return other; }
   list() { try { return fs.readdirSync(this._p); } catch (e) { return null; } }
   listFiles(filter) { const names = this.list(); if (!names) return null; let files = names.map((n) => new File(this, n)); if (typeof filter === 'function') files = files.filter((f) => filter(f)); return new ArrayList(files); }
-  zip(target) { const AdmLike = require('./zip'); AdmLike.zipPath(this._p, target._p); }
-  unzip(targetDir) { const AdmLike = require('./zip'); AdmLike.unzipPath(this._p, targetDir._p); }
+  zip(target) { const AdmLike = require('./_zip'); AdmLike.zipPath(this._p, target._p); }
+  unzip(targetDir) { const AdmLike = require('./_zip'); AdmLike.unzipPath(this._p, targetDir._p); }
   gzip(target) { fs.writeFileSync(target._p, zlib.gzipSync(fs.readFileSync(this._p))); }
   gunzip(targetDir) { const name = this.getName().replace(/\.gz$/, ''); fs.mkdirSync(targetDir._p, { recursive: true }); fs.writeFileSync(path.join(targetDir._p, name), zlib.gunzipSync(fs.readFileSync(this._p))); }
   md5() { return crypto.createHash('md5').update(fs.readFileSync(this._p)).digest('hex'); }

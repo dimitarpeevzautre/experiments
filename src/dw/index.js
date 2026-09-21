@@ -3,73 +3,66 @@ const fs = require('fs');
 const path = require('path');
 
 /**
- * Registry of dw.* classes. Classes are loaded lazily from src/dw/<package>/<Class>.js.
- * Unknown classes resolve to a stub whose members throw a descriptive error, so code that merely
- * references an exotic class still loads. Custom implementations can be registered at runtime.
+ * Registry of dw.* classes. Classes load lazily from src/dw/<package>[/<sub>]/<Class>.js.
+ * Package names start with a lowercase letter, class names with an uppercase letter, which is how
+ * `dw.extensions.payments.SalesforcePaymentsMgr` is told apart from `dw.system.Site`.
+ * Unknown classes resolve to a stub whose members throw a descriptive NotImplementedError, so code
+ * that merely references an exotic class still loads. Implementations can be registered at runtime.
  */
 class DwRegistry {
   constructor() {
     this.root = __dirname;
-    this.packages = {};      // pkg -> [ClassName]
+    this.packages = {};      // 'system' | 'extensions/payments' -> [ClassName]
     this.cache = new Map();  // 'pkg/Class' -> impl
     this.overrides = new Map();
-    for (const pkg of fs.readdirSync(this.root)) {
-      const dir = path.join(this.root, pkg);
-      if (!fs.statSync(dir).isDirectory()) continue;
-      this.packages[pkg] = fs.readdirSync(dir).filter((f) => f.endsWith('.js')).map((f) => f.slice(0, -3)).sort();
-    }
-    this.namespace = this._buildNamespace();
+    const scan = (dir, prefix) => {
+      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+        if (e.isDirectory()) { const pkg = prefix ? `${prefix}/${e.name}` : e.name; this.packages[pkg] = this.packages[pkg] || []; scan(path.join(dir, e.name), pkg); }
+        else if (prefix && e.name.endsWith('.js') && !e.name.startsWith('_')) this.packages[prefix].push(e.name.slice(0, -3));
+      }
+    };
+    scan(this.root, '');
+    for (const k of Object.keys(this.packages)) this.packages[k].sort();
+    this.namespace = this._packageProxy('');
   }
   has(id) { const [pkg, cls] = split(id); return this.overrides.has(`${pkg}/${cls}`) || ((this.packages[pkg] || []).includes(cls)); }
-  register(id, impl) { const [pkg, cls] = split(id); this.overrides.set(`${pkg}/${cls}`, impl); this.cache.delete(`${pkg}/${cls}`); if (!this.packages[pkg]) { this.packages[pkg] = []; this._addPackage(pkg); } if (!this.packages[pkg].includes(cls)) this.packages[pkg].push(cls); }
+  register(id, impl) { const [pkg, cls] = split(id); this.overrides.set(`${pkg}/${cls}`, impl); this.cache.delete(`${pkg}/${cls}`); this.packages[pkg] = this.packages[pkg] || []; if (!this.packages[pkg].includes(cls)) this.packages[pkg].push(cls); }
   get(id) {
     const [pkg, cls] = split(id);
     const key = `${pkg}/${cls}`;
     if (this.cache.has(key)) return this.cache.get(key);
     let impl;
     if (this.overrides.has(key)) impl = this.overrides.get(key);
-    else if ((this.packages[pkg] || []).includes(cls)) impl = require(path.join(this.root, pkg, `${cls}.js`));
+    else if ((this.packages[pkg] || []).includes(cls)) impl = require(path.join(this.root, ...pkg.split('/'), `${cls}.js`));
     else impl = makeStub(pkg, cls);
     this.cache.set(key, impl);
     return impl;
   }
-  _buildNamespace() {
-    const ns = {};
-    for (const pkg of Object.keys(this.packages)) this._addPackage(pkg, ns);
-    this.namespace = ns;
-    return new Proxy(ns, {
-      get: (t, k) => {
-        if (typeof k === 'symbol' || k in t) return t[k];
-        // unknown package: create lazily
-        this.packages[k] = this.packages[k] || [];
-        return this._addPackage(k, t);
-      },
-    });
-  }
-  _addPackage(pkg, ns = this.namespace) {
+  _packageProxy(pkg) {
     const reg = this;
     const target = {};
-    Object.defineProperty(target, '__package', { value: pkg });
-    const pkgObj = new Proxy(target, {
+    return new Proxy(target, {
       get(t, k) {
-        if (typeof k === 'symbol' || k === 'toString' || k === 'valueOf' || k === 'toJSON' || k === 'inspect') return t[k] || (k === 'toString' ? () => `[dw.${pkg}]` : undefined);
+        if (typeof k === 'symbol') return t[k];
         if (k === '__package') return pkg;
-        if (k === 'then') return undefined;
-        return reg.get(`${pkg}/${k}`);
+        if (k === 'toString') return () => `[dw${pkg ? '.' + pkg.replace(/\//g, '.') : ''}]`;
+        if (k === 'valueOf' || k === 'toJSON' || k === 'inspect' || k === 'then' || k === 'constructor') return undefined;
+        const full = pkg ? `${pkg}/${k}` : k;
+        if (/^[A-Z]/.test(k) && pkg) return reg.get(full);
+        if (!t[k]) t[k] = reg._packageProxy(full);
+        return t[k];
       },
-      has(t, k) { return reg.has(`${pkg}/${k}`); },
-      ownKeys() { return reg.packages[pkg] || []; },
-      getOwnPropertyDescriptor(t, k) { return { enumerable: true, configurable: true, value: reg.get(`${pkg}/${k}`) }; },
+      has(t, k) { return typeof k === 'string' && (Object.keys(reg.packages).some((p) => p === (pkg ? `${pkg}/${k}` : k)) || reg.has(`${pkg}/${k}`)); },
+      ownKeys(t) { const subs = Object.keys(reg.packages).filter((p) => (pkg ? p.startsWith(pkg + '/') && !p.slice(pkg.length + 1).includes('/') : !p.includes('/'))).map((p) => p.split('/').pop()); const all = new Set(subs.concat(pkg ? reg.packages[pkg] || [] : [], Object.keys(t))); return Array.from(all); },
+      getOwnPropertyDescriptor(t, k) { return { enumerable: true, configurable: true, writable: true, value: this.get(t, k) }; },
     });
-    Object.defineProperty(ns, pkg, { value: pkgObj, enumerable: true, configurable: true });
-    return pkgObj;
   }
 }
 
 function split(id) {
-  const parts = String(id).replace(/^dw[/.]/, '').split(/[/.]/);
+  const parts = String(id).replace(/^dw[/.]/, '').split(/[/.]/).filter(Boolean);
   if (parts.length < 2) throw new Error(`Invalid dw class id: ${id}`);
-  return [parts[0], parts[parts.length - 1]];
+  return [parts.slice(0, -1).join('/'), parts[parts.length - 1]];
 }
 
 class NotImplementedError extends Error {
@@ -77,11 +70,9 @@ class NotImplementedError extends Error {
 }
 
 function makeStub(pkg, cls) {
-  const full = `dw.${pkg}.${cls}`;
+  const full = `dw.${pkg.replace(/\//g, '.')}.${cls}`;
   const hint = `${full} is not implemented by sfcc-runtime. Register an implementation with runtime.registerClass('dw/${pkg}/${cls}', impl).`;
-  const Stub = function StubClass() {
-    throw new NotImplementedError(`Cannot instantiate ${full}: ${hint}`);
-  };
+  const Stub = function StubClass() { throw new NotImplementedError(`Cannot instantiate ${full}: ${hint}`); };
   Object.defineProperty(Stub, 'name', { value: cls });
   Stub.__stub = true;
   Stub.toString = () => `[stub ${full}]`;

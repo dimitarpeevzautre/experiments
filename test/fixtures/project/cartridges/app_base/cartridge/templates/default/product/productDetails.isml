@@ -1,0 +1,10 @@
+<isdecorate template="common/layout/page">
+<h1 class="name">${pdict.product.name}</h1>
+<p class="price"><isif condition="${pdict.priceRange}">from <isprint value="${pdict.minPrice}"/><iselse/><isprint value="${pdict.price}"/></isif></p>
+<p class="availability">${pdict.available ? 'In stock' : 'Out of stock'}</p>
+<isloop items="${pdict.attributes}" var="attr">
+<ul class="attr-${attr.id}"><isloop items="${attr.values}" var="v"><li class="${v.selected ? 'selected' : ''} ${v.orderable ? '' : 'unavailable'}"><a href="${v.url}">${v.display}</a></li></isloop></ul>
+</isloop>
+<isloop items="${pdict.images}" var="img"><img src="${img}"/></isloop>
+<isscript>var desc = pdict.product.longDescription; if (desc) out.print('<div class="desc">' + desc.markup + '</div>');</isscript>
+</isdecorate>

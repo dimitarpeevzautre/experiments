@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<form xmlns="http://www.demandware.com/xml/form/2008-04-19">
+  <field formid="username" type="string" mandatory="true"/>
+  <field formid="password" type="string" mandatory="true" min-length="8"/>
+  <field formid="rememberme" type="boolean"/>
+  <action formid="login" valid-form="true"/>
+</form>

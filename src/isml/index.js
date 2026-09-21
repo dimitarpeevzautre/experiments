@@ -186,7 +186,7 @@ class CodeGen {
     out.push('const __print = (v) => __out.push(__str(v));');
     out.push('const __enc = (v) => __str(v).replace(/[&<>"\']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\\"": "&quot;", "\'": "&#39;" }[c]));');
     out.push('const __iter = (v) => { if (v == null) return []; if (Array.isArray(v)) return v; if (typeof v[Symbol.iterator] === "function" && typeof v !== "string") return Array.from(v); if (typeof v.iterator === "function") { const a = []; const it = v.iterator(); while (it.hasNext()) a.push(it.next()); return a; } if (typeof v.hasNext === "function") { const a = []; while (v.hasNext()) a.push(v.next()); return a; } if (typeof v === "object") return Object.values(v); return [v]; };');
-    out.push('const __fmt = (v, style, formatter) => __isml.format(v, style, formatter);');
+    out.push('const __fmt = (v, style, formatter, tz) => __isml.format(v, style, formatter, tz);');
     out.push('let __contentType = null;');
     out.push('var __pdictOverlay = pdict;');
     out.push(this.block(nodes));
@@ -237,7 +237,7 @@ class CodeGen {
         const end = a.end !== undefined ? this.attrExpr(a.end) : 'null';
         const step = a.step !== undefined ? this.attrExpr(a.step) : '1';
         const arr = this.uid('arr'); const i = this.uid('i');
-        return `{ const ${arr} = __iter(${items}); const __end = ${end}; const __begin = ${begin}; const __step = Math.max(1, ${step});
+        return `{ const ${arr} = __iter(${items}); const __endRaw = ${end}; const __end = __endRaw === null || __endRaw === undefined || __endRaw === '' ? null : Number(__endRaw); const __begin = Number(${begin}) || 0; const __step = Math.max(1, Number(${step}) || 1);
   for (let ${i} = __begin; ${i} < ${arr}.length && (__end === null || ${i} <= __end); ${i} += __step) {
     __ctx[${JSON.stringify(v)}] = pdict[${JSON.stringify(v)}] = ${arr}[${i}];
     ${status ? `__ctx[${JSON.stringify(status)}] = pdict[${JSON.stringify(status)}] = { count: (${i} - __begin) / __step + 1, index: ${i}, first: ${i} === __begin, last: ${i} + __step >= ${arr}.length || (__end !== null && ${i} + __step > __end), odd: (((${i} - __begin) / __step) % 2) === 0, even: (((${i} - __begin) / __step) % 2) === 1, length: ${arr}.length };` : ''}
@@ -394,7 +394,8 @@ Object.assign(Isml.prototype, {
     this.modules.set(key, { template: attrs.template, attrs: Object.keys(attrs).filter((k) => !['name', 'template'].includes(k)) });
   },
   customTag(ctx, name, values, fromFile) {
-    const def = this.modules.get(name.toLowerCase());
+    const key = name.toLowerCase();
+    const def = this.modules.get(key) || this.modules.get(key.replace(/^is/, ''));
     if (!def) throw new Error(`Unknown ISML tag <${name}> in ${fromFile} (declare it with <ismodule>)`);
     const file = this.rt.resolveTemplate(def.template);
     if (!file) throw new Error(`Template ${def.template} for custom tag <${name}> not found`);

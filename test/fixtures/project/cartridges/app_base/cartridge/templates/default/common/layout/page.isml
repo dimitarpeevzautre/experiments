@@ -1,0 +1,3 @@
+<!DOCTYPE html><html><head><title>${Resource.msg('global.title', 'common', 'Store')}</title><script src="${URLUtils.staticURL('/js/main.js')}"></script></head><body>
+<isreplace/>
+</body></html>

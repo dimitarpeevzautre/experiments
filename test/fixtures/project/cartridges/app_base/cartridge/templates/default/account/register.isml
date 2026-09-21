@@ -1,0 +1,5 @@
+<form action="${URLUtils.url('Account-SubmitRegistration')}" method="post" <isprint value="${pdict.profileForm.attributes}" encoding="off"/>>
+<input name="${pdict.profileForm.customer.email.htmlName}" required="${pdict.profileForm.customer.email.mandatory}" maxlength="${pdict.profileForm.customer.email.maxLength}"/>
+<input name="${pdict.profileForm.login.password.htmlName}"/>
+<input type="hidden" name="${dw.web.CSRFProtection.getTokenName()}" value="${dw.web.CSRFProtection.generateToken()}"/>
+</form>

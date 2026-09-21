@@ -46,7 +46,9 @@ class Runtime {
     globals.install(this);
     // lazily created subsystems
     this._isml = null; this._sessions = null; this._hooks = null; this._forms = null; this._logger = null;
+    this.pipelets = {};
     this.context = this.createScriptContext();
+    this.on('login', (customer) => { try { this.dw.get('order/BasketMgr')._onLogin(customer); } catch (e) { this.log('warn', 'runtime', `basket merge on login failed: ${e.message}`); } });
   }
 
   // ---- cartridges -------------------------------------------------------
@@ -149,7 +151,9 @@ class Runtime {
   eval(code, vars = {}) {
     const vm = require('vm');
     const names = Object.keys(vars);
-    const fn = vm.compileFunction(code, ['require', ...names], { filename: '<eval>' });
+    let fn;
+    try { fn = vm.compileFunction(`return (${code}\n);`, ['require', ...names], { filename: '<eval>' }); }
+    catch (e) { fn = vm.compileFunction(code, ['require', ...names], { filename: '<eval>' }); }
     return fn(this.require.bind(this), ...names.map((n) => vars[n]));
   }
   /** Run a script file (controller module, job step, .ds) and return its exports. */
@@ -165,6 +169,11 @@ class Runtime {
   runJob(jobId, opts) { return require('./jobs').runJob(this, jobId, opts); }
   runPipeline(name, dict, opts) { return require('./pipelines').run(this, name, dict, opts); }
   renderTemplate(name, pdict) { return this.isml.renderTemplate(name, pdict); }
+  /** Calculate a basket: uses the dw.order.calculate hook when a cartridge provides it, else the built-in calculation. */
+  calculateBasket(basket) {
+    if (this.hooks.has('dw.order.calculate')) return this.hooks.call('dw.order.calculate', 'calculate', basket);
+    return require('./internal/calculate').calculate(basket);
+  }
 
   // ---- logging ----------------------------------------------------------
   log(level, category, message) {

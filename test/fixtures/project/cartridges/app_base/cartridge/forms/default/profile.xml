@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<form xmlns="http://www.demandware.com/xml/form/2008-04-19">
+  <group formid="customer">
+    <field formid="firstname" label="label.firstname" type="string" mandatory="true" binding="firstName" max-length="50" missing-error="error.firstname.missing"/>
+    <field formid="lastname" label="label.lastname" type="string" mandatory="true" binding="lastName" max-length="50"/>
+    <field formid="email" label="label.email" type="string" mandatory="true" binding="email" max-length="50" regexp="^[\w.%+-]+@[\w.-]+\.[\w]{2,6}$" missing-error="error.email.missing" parse-error="error.email.parse"/>
+    <field formid="phone" label="label.phone" type="string" mandatory="false" binding="phoneHome"/>
+    <field formid="addtoemaillist" type="boolean" binding="custom.newsletter"/>
+  </group>
+  <include formid="login" name="login"/>
+  <action formid="confirm" valid-form="true"/>
+</form>

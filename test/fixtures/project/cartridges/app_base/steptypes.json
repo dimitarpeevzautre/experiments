@@ -1,0 +1,4 @@
+{ "step-types": {
+  "script-module-step": [ { "@type-id": "custom.SayHello", "module": "app_base/cartridge/scripts/steps/hello.js", "function": "execute", "parameters": { "parameter": [ { "@name": "Name", "@type": "string", "default-value": "World" } ] } } ],
+  "chunk-script-module-step": [ { "@type-id": "custom.ExportProducts", "module": "app_base/cartridge/scripts/steps/exportProducts.js", "chunk-size": 2, "before-step-function": "beforeStep", "read-function": "read", "process-function": "process", "write-function": "write", "after-step-function": "afterStep", "total-count-function": "getTotalCount" } ]
+} }

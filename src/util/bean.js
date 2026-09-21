@@ -24,8 +24,8 @@ function bean(Class) {
     if (name === 'constructor') continue;
     const desc = Object.getOwnPropertyDescriptor(proto, name);
     if (typeof desc.value !== 'function') continue;
-    if (/^get[A-Z]/.test(name) && desc.value.length === 0) getters.set(propName(name, 'get'), name);
-    else if (/^is[A-Z]/.test(name) && desc.value.length === 0) {
+    if (/^get[A-Z]/.test(name) && desc.value.length <= 1) getters.set(propName(name, 'get'), name);
+    else if (/^is[A-Z]/.test(name) && desc.value.length <= 1) {
       const p = propName(name, 'is');
       if (!getters.has(p)) getters.set(p, name);
     } else if (/^set[A-Z]/.test(name) && desc.value.length === 1) setters.set(propName(name, 'set'), name);

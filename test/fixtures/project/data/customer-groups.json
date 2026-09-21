@@ -1,0 +1,1 @@
+{ "VIP": { "description": "VIP customers" }, "BigSpenders": { "ruleBased": true, "rule": "profile && profile.custom.spent > 1000" } }

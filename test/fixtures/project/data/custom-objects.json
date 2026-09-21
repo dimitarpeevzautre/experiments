@@ -1,0 +1,1 @@
+{ "Settings": { "featureFlag": { "custom": { "ID": "featureFlag", "enabled": true, "threshold": 3 } }, "other": { "custom": { "ID": "other", "enabled": false, "threshold": 9 } } } }

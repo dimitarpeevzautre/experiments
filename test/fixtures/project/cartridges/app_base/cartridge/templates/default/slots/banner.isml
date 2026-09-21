@@ -1,0 +1,1 @@
+<div class="slot"><isloop items="${pdict.slotcontent.content}" var="p">${p.name}</isloop> ${pdict.slotcontent.calloutMsg}</div>

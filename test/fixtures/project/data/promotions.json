@@ -1,0 +1,7 @@
+{
+  "10off-shirts": { "name": "10% off shirts", "promotionClass": "product", "enabled": true, "calloutMsg": "Save 10% on shirts", "categories": ["mens-shirts"], "discount": { "type": "percentage", "value": 10 }, "rank": 10 },
+  "order-5-over-50": { "name": "$5 off orders over $50", "promotionClass": "order", "enabled": true, "minAmount": 50, "discount": { "type": "amount", "value": 5 } },
+  "free-ship-coupon": { "name": "Free shipping with coupon", "promotionClass": "shipping", "enabled": true, "coupons": ["FREESHIP"], "discount": { "type": "free_shipping" } },
+  "vip-20": { "name": "VIP 20%", "promotionClass": "product", "enabled": true, "customerGroups": ["VIP"], "all": true, "discount": { "type": "percentage", "value": 20 }, "exclusivity": "CLASS", "rank": 1 },
+  "expired": { "name": "Expired", "promotionClass": "order", "enabled": true, "endDate": "2000-01-01", "discount": { "type": "percentage", "value": 50 } }
+}

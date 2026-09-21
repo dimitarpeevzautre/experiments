@@ -1,0 +1,1 @@
+{ "inventory_m": { "default": true, "records": { "P0001-RED-S": { "ATS": 10, "allocation": 10 }, "P0001-RED-M": { "ATS": 0, "allocation": 5 }, "P0001-BLUE-M": { "ATS": 3, "allocation": 3 }, "P0002": { "ATS": 100, "allocation": 100 }, "P0004": { "perpetual": true }, "O0001": { "ATS": 7, "allocation": 7 } } } }

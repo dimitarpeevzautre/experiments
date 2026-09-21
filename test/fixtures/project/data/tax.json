@@ -1,0 +1,1 @@
+{ "policy": "net", "defaultTaxClassID": "standard", "defaultJurisdictionID": "US", "jurisdictions": { "US": { "countries": ["US"] }, "US-NY": { "countries": ["US"], "states": ["NY"] }, "DE": { "countries": ["DE"] } }, "rates": { "US": { "standard": 0.05 }, "US-NY": { "standard": 0.08875 }, "DE": { "standard": 0.19 } } }

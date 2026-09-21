@@ -1,0 +1,1 @@
+{ "test.http.echo": { "serviceType": "HTTP", "credential": { "URL": "http://example.invalid/echo", "user": "u", "password": "p" }, "profile": { "timeoutMillis": 2000 } }, "test.mock": { "serviceType": "HTTP", "mockMode": true } }

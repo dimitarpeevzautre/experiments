@@ -1,0 +1,1 @@
+<footer class="custom">${Resource.msg('global.footer', 'common', null)}</footer>

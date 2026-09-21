@@ -1,0 +1,1 @@
+<footer>${Resource.msg('global.footer', 'common', null)} &copy; <isprint value="${new Date()}" formatter="yyyy"/></footer>

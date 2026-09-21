@@ -1,0 +1,1 @@
+{ "landing": { "typeID": "storePage", "data": { "headline": "Welcome" }, "regions": { "main": { "components": [ { "id": "c1", "typeID": "text", "data": { "text": "Hello PD" } }, { "id": "c2", "typeID": "text", "data": { "text": "hidden" }, "visible": false } ] } } } }

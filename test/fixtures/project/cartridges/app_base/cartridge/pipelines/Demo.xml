@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pipeline group="Demo" type="view">
+  <branch basename="Show">
+    <segment>
+      <node><start-node call-mode="public" name="Show" secure="false"/><node-display x="1" y="1"/></node>
+      <simple-transition/>
+      <node>
+        <pipelet-node pipelet-name="Assign" pipelet-set-identifier="bc_api">
+          <key-binding alias="From_0" key="&quot;Pipelines&quot;"/>
+          <key-binding alias="To_0" key="Title"/>
+          <key-binding alias="From_1" key="CurrentHttpParameterMap.fail.stringValue"/>
+          <key-binding alias="To_1" key="Fail"/>
+        </pipelet-node>
+      </node>
+      <simple-transition/>
+      <node>
+        <pipelet-node pipelet-name="Script" pipelet-set-identifier="bc_api">
+          <config-property key="ScriptFile" value="helpers/legacyMath.ds"/>
+          <config-property key="Transactional" value="false"/>
+          <config-property key="OnError" value="PIPELET_ERROR"/>
+          <key-binding alias="Total" key="Total"/>
+          <key-binding alias="Fail" key="Fail"/>
+        </pipelet-node>
+        <branch basename="b1" source-connector="error">
+          <segment>
+            <node><interaction-node transaction-required="false"><template buffered="true" dynamic="false" name="error/pipelineError"/></interaction-node></node>
+          </segment>
+        </branch>
+      </node>
+      <simple-transition/>
+      <node>
+        <decision-node condition-key="Total" condition-operator="expr" condition-value="Total &gt; 10"/>
+        <branch basename="b2" source-connector="no">
+          <segment>
+            <node><end-node name="small"/></node>
+          </segment>
+        </branch>
+      </node>
+      <simple-transition/>
+      <node><call-node start-name-ref="Demo-Sub"/></node>
+      <simple-transition/>
+      <node><interaction-node transaction-required="false"><template buffered="true" dynamic="false" name="pipeline/demo"/></interaction-node></node>
+    </segment>
+  </branch>
+  <branch basename="Sub">
+    <segment>
+      <node><start-node call-mode="private" name="Sub"/></node>
+      <simple-transition/>
+      <node>
+        <pipelet-node pipelet-name="Eval" pipelet-set-identifier="bc_api">
+          <config-property key="Expression" value="Total * 2"/>
+          <key-binding alias="Result" key="Doubled"/>
+        </pipelet-node>
+      </node>
+      <simple-transition/>
+      <node><end-node name="next"/></node>
+    </segment>
+  </branch>
+</pipeline>

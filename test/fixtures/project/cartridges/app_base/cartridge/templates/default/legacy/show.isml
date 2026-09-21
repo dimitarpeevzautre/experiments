@@ -1,0 +1,1 @@
+<isset name="x" value="${pdict.Param}" scope="page"/><h2>${pdict.Title}:${x}</h2>

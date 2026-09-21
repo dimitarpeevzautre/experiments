@@ -1,0 +1,11 @@
+{
+  "P0001": { "name": "Classic Shirt", "shortDescription": "A classic shirt", "longDescription": "<b>Soft</b> cotton", "brand": "Acme", "online": true, "searchable": true, "categories": ["mens-shirts"], "master": true, "variants": ["P0001-RED-S", "P0001-RED-M", "P0001-BLUE-M"], "variationAttributes": [ { "ID": "color", "displayName": "Color", "values": [ { "value": "red", "displayValue": "Red" }, { "value": "blue", "displayValue": "Blue" } ] }, { "ID": "size", "displayName": "Size", "values": [ { "value": "S", "displayValue": "Small" }, { "value": "M", "displayValue": "Medium" } ] } ], "images": { "large": [ { "path": "large/P0001.jpg", "alt": "Shirt" } ] }, "custom": { "material": "cotton" }, "taxClassID": "standard" },
+  "P0001-RED-S": { "masterID": "P0001", "variationValues": { "color": "red", "size": "S" } },
+  "P0001-RED-M": { "masterID": "P0001", "variationValues": { "color": "red", "size": "M" } },
+  "P0001-BLUE-M": { "masterID": "P0001", "variationValues": { "color": "blue", "size": "M" }, "images": { "large": [ { "path": "large/P0001-blue.jpg" } ] } },
+  "P0002": { "name": "Plain Hat", "online": true, "searchable": true, "categories": ["mens"], "brand": "Acme", "custom": { "material": "wool" }, "taxClassID": "standard" },
+  "P0003": { "name": "Offline Thing", "online": false, "categories": ["mens"] },
+  "P0004": { "name": "Womens Scarf", "online": true, "searchable": true, "categories": ["womens"], "brand": "Bravo", "custom": { "material": "silk" } },
+  "B0001": { "name": "Hat & Scarf Bundle", "online": true, "searchable": true, "categories": ["root"], "bundledProducts": [ { "ID": "P0002", "quantity": 1 }, { "ID": "P0004", "quantity": 2 } ] },
+  "O0001": { "name": "Engraved Mug", "online": true, "searchable": true, "categories": ["root"], "options": [ { "ID": "engraving", "displayName": "Engraving", "values": [ { "ID": "none", "displayValue": "None", "price": 0, "default": true }, { "ID": "yes", "displayValue": "Engraved", "price": 5 } ] } ] }
+}

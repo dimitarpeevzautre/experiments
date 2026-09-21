@@ -1,0 +1,1 @@
+{ "DemoJob": { "steps": [ { "id": "hello", "type": "custom.SayHello", "parameters": { "Name": "Job" } }, { "id": "export", "type": "custom.ExportProducts", "parameters": { "FileName": "out.csv" } } ] } }

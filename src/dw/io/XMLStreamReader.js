@@ -62,6 +62,10 @@ function xmlObject(node) {
   const obj = new Proxy(node, {
     get(t, k) {
       if (typeof k === 'symbol') return t[k];
+      if (k.startsWith('@')) return t.attrs[k.slice(1)];
+      const kidsFirst = t.childrenNamed(k);
+      if (kidsFirst.length === 1) return xmlObject(kidsFirst[0]);
+      if (kidsFirst.length > 1) return kidsFirst.map(xmlObject);
       if (k in t) { const v = t[k]; return typeof v === 'function' ? v.bind(t) : v; }
       if (k === 'attribute') return (n) => t.attrs[n];
       if (k === 'children') return () => t.elements.map(xmlObject);

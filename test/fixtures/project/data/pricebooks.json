@@ -1,0 +1,5 @@
+{
+  "usd-list": { "currencyCode": "USD", "prices": { "P0001-RED-S": 20, "P0001-RED-M": 25, "P0001-BLUE-M": 30, "P0002": 15, "P0004": 40, "B0001": 80, "O0001": 12, "P0003": 5 } },
+  "usd-sale": { "currencyCode": "USD", "parent": "usd-list", "prices": { "P0001-RED-M": 22, "P0002": [ { "quantity": 1, "price": 15 }, { "quantity": 3, "price": 12 } ] } },
+  "eur-list": { "currencyCode": "EUR", "prices": { "P0002": 14 } }
+}

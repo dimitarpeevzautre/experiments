@@ -1,0 +1,1 @@
+{ "assets": { "about-us": { "name": "About Us", "online": true, "searchable": true, "folders": ["about"], "custom": { "body": "<p>We sell things</p>" } } }, "folders": { "about": { "displayName": "About", "parent": "root" } } }

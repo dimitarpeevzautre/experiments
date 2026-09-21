@@ -1,0 +1,1 @@
+{ "root": { "displayName": "Storefront" }, "mens": { "displayName": "Mens", "parent": "root", "position": 1 }, "mens-shirts": { "displayName": "Shirts", "parent": "mens" }, "womens": { "displayName": "Womens", "parent": "root", "position": 2, "online": true }, "hidden": { "displayName": "Hidden", "parent": "root", "online": false } }

@@ -1,0 +1,4 @@
+{ "hooks": [
+  { "name": "app.customer.registered", "script": "./hooks/customer.js" },
+  { "name": "app.pricing.format", "script": "./hooks/pricing.js" }
+] }
